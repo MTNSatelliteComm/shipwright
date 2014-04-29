@@ -5,6 +5,7 @@ A tool for quickly creating a ship-in-a-bottle cloud:
 * chef data bags
 * chef recipes
 * zerg task
+* list of gerrit reviews
 
 
 ## Licence
