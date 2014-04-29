@@ -1,3 +1,14 @@
+# ShipWright
+
+A tool for quickly creating a ship-in-a-bottle cloud:
+
+* chef data bags
+* chef recipes
+* zerg task
+
+
+## Licence
+
 Copyright 2014 by MTN Sattelite Communications
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
