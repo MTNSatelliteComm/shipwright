@@ -1,0 +1,12 @@
+#
+# Cookbook Name:: ship
+# Recipe:: <%= ship_name %>
+#
+# Copyright (C) 2013 YOUR_NAME
+# 
+# All rights reserved - Do Not Redistribute
+#
+
+node.normal['ship']['id']                  = "<%= ship_name %>"
+
+include_recipe "ship::fixup_attributes"

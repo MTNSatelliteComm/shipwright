@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
   s.add_dependency "highline"
   s.add_dependency "octokit"
   s.add_dependency "grit"
+  s.add_dependency "fog"
   s.add_dependency "zergrush", ">= 0.0.15"
 
   s.files        = `git ls-files`.split("\n")
