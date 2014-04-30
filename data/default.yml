@@ -1,0 +1,5 @@
+--- 
+chef_repo: chef-repo
+gerrit_host: review.mtnsatcloud.com
+gerrit_port: 29418
+gerrit_protocol: ssh

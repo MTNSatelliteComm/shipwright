@@ -23,19 +23,16 @@
 
 require 'thor'
 require 'shipwright'
-require 'shipwright/generators/shipgen'
 
 module Shipwright
-    class CLI < Thor 
-        class_option :debug, :type => :boolean, :banner => "more detailed output"  
-
+    class CLI < Thor
         def self.exit_on_failure?
             true
         end
 
         desc "wizard", "run interactive wizard"
         def wizard
-            puts Shipwright::Wizard.start(options[:debug])
+            puts Shipwright::Wizard.start
         end
     end
 end

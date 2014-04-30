@@ -21,10 +21,36 @@
 # IN THE SOFTWARE.
 #++
 
+require 'yaml'
+require 'fileutils'
+require 'highline/import'
+require 'grit'
+include Grit
+
 module Shipwright
     class Wizard
-        def self.start(debug)
-           puts "TODO: DO STUFF!!!" 
+        def self.start()
+            config = Hash.new
+            if File.exists?(File.join("~", ".shipwright", "config.yml"))
+                config = YAML.load_file(File.join("~", ".shipwright", "config.yml")).merge(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "data", "default.yml")))
+            else
+                config = YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "data", "default.yml"))
+            end
+
+            run(config)
+        end
+
+        def self.run(config)
+            config[:github_user] = ask("Enter your Github user name:  ") if config[:github_user].nil?
+            config[:github_password] = ask("Enter your Github password:  ") { |q| q.echo = "*" } if config[:github_password].nil?
+            config[:gerrit_user] = ask("Enter your Gerrit user name:  ") if config[:gerrit_user].nil?
+
+            puts "Cloning #{config[:gerrit_protocol]}://#{config[:gerrit_user]}@#{config[:gerrit_host]}:#{config[:gerrit_port]}/chef-repo"
+            
+            FileUtils.rm_rf("/tmp/chef_repo") if File.directory?("/tmp/chef_repo")
+            chef_repo = Grit::Git.new('/tmp/chef_repo')
+            gritty.clone({:quiet => false, :verbose => true, :progress => true, :branch => 'master'}, "#{config[:gerrit_protocol]}://#{config[:gerrit_user]}@#{config[:gerrit_host]}:#{config[:gerrit_port]}/chef-repo", "/tmp/chef_repo")
+            FileUtils.rm_rf("/tmp/chef_repo")
         end
     end
 end
