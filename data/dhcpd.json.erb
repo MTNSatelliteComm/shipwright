@@ -1,0 +1,63 @@
+{
+  "id": "dhcpd",
+  "reservations": [
+    {
+      "ip": "{sled1_eth0_ip}",
+      "mac-address": "{sled1_eth0_mac}",
+      "hostname": "{sled1_hostname}"
+    },
+    {
+      "ip": "{sled2_eth0_ip}",
+      "mac-address": "{sled2_eth0_mac}",
+      "hostname": "{sled2_hostname}"
+    },
+    {
+      "ip": "{sled3_eth0_ip}",
+      "mac-address": "{sled3_eth0_mac}",
+      "hostname": "{sled3_hostname}"
+    },
+    {
+      "ip": "{sled4_eth0_ip}",
+      "mac-address": "{sled4_eth0_mac}",
+      "hostname": "{sled4_hostname}"
+    },
+    {
+      "ip": "{sled5_eth0_ip}",
+      "mac-address": "{sled5_eth0_mac}",
+      "hostname": "{sled5_hostname}"
+    },
+    {
+      "ip": "{sled6_eth0_ip}",
+      "mac-address": "{sled6_eth0_mac}",
+      "hostname": "{sled6_hostname}"
+    },
+    {
+      "ip": "{sled7_eth0_ip}",
+      "mac-address": "{sled7_eth0_mac}",
+      "hostname": "{sled7_hostname}"
+    },
+    {
+      "ip": "{sled8_eth0_ip}",
+      "mac-address": "{sled8_eth0_mac}",
+      "hostname": "{sled8_hostname}"
+    },
+    {
+      "ip": "{stackato_poc_ip}",
+      "mac-address": "{stackato_br0_mac}",
+      "hostname": "{stackato_poc_hostname}"
+    }
+  ],
+  "scopes": [
+    {
+      "router": "{dhcp_router}",
+      "dns": "{dhcp_dns}",
+      "netmask": "{dhcp_pool_mask}",
+      "network": "{dhcp_pool_net}",
+      "range": {
+        "start": "{dhcp_pool_stop}",
+        "stop": "{dhcp_pool_start}"
+      },
+      "domain-name": "{dhcp_domain_name}"
+    }
+  ]
+}

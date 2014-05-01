@@ -1,0 +1,143 @@
+{
+  "id": "dns",
+  "zones": [
+    {
+      "name": "{nexus_domain_name}",
+      "override_zone": true,
+      "split": "public,private",
+      "records": [
+        {
+          "name": "rabbit",
+          "private_target": "{infra2_lan_ip}",
+          "type": "A"
+        },
+        {
+          "name": "chef",
+          "private_target": "{infra_lan_ip}",
+          "type": "A"
+        },
+        {
+          "name": "dp-pipeline",
+          "target": "{sled2_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "riverbed",
+          "target": "{riverbed_wan_ip}",
+          "type": "A"
+        },
+        {
+          "name": "zi-relay",
+          "private_target": "{infra2_lan_ip}",
+          "type": "A"
+        },
+        {
+          "name": "zeroimpact",
+          "private_target": "{sled8_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "{sled1_hostname}",
+          "private_target": "{sled1_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "{sled2_hostname}",
+          "private_target": "{sled2_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "{sled3_hostname}",
+          "private_target": "{sled3_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "{sled4_hostname}",
+          "private_target": "{sled4_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "{sled5_hostname}",
+          "private_target": "{sled5_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "{sled6_hostname}",
+          "private_target": "{sled6_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "{sled7_hostname}",
+          "private_target": "{sled7_eth0_ip}",
+          "type": "A"
+        },
+        {
+          "name": "{sled8_hostname}",
+          "private_target": "{sled8_eth0_ip}",
+          "type": "A"
+        }
+      ]
+    },
+    {
+      "name": "nomadix.{nexus_domain_name}",
+      "override_zone": true,
+      "records": [
+        {
+          "name": "pax",
+          "target": "{pax_nomadix_wan_ip}",
+          "type": "A"
+        },
+        {
+          "name": "crew",
+          "target": "{crew_nomadix_wan_ip}",
+          "type": "A"
+        }
+      ]
+    },
+    {
+      "name": "poseidon.mtnsatcloud.com",
+      "override_zone": true,
+      "records": [],
+      "split": "public,private",
+      "target": "{infra_wan_ip}",
+      "private_target": "{stackato_poc_ip}",
+      "wildcard": true
+    },
+    {
+      "name": "daphne.mtnsatcloud.com",
+      "override_zone": true,
+      "records": [],
+      "split": "public,private",
+      "target": "{infra_wan_ip}",
+      "private_target": "{stackato_poc_ip}",
+      "wildcard": true
+    },
+    {
+      "name": "greenlight.mtnsatcloud.com",
+      "override_zone": true,
+      "records": [],
+      "split": "public,private",
+      "target": "{infra_wan_ip}",
+      "private_target": "{stackato_poc_ip}",
+      "wildcard": true
+    },
+    {
+      "name": "seanet.mtnsatcloud.com",
+      "override_zone": true,
+      "records": [],
+      "split": "public,private",
+      "target": "{infra_wan_ip}",
+      "private_target": "{stackato_poc_ip}",
+      "wildcard": true
+    },
+    {
+      "name": "paas.{ship_fqdn}",
+      "override_zone": true,
+      "records": [],
+      "split": "public,private",
+      "target": "{infra_wan_ip}",
+      "private_target": "{stackato_poc_ip}",
+      "wildcard": true
+    }
+  ]
+}

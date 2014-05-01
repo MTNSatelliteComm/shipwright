@@ -1,0 +1,120 @@
+{
+  "id": "firewall",
+  "rules": [
+    {
+      "rule": {
+        "j": "ACCEPT",
+        "i": "{infra_lan_root_if}",
+        "dport": "80",
+        "p": "tcp",
+        "d": "54.208.5.246"
+      },
+      "chain": "PREROUTING",
+      "table": "nat",
+      "comment": "Connections to appfog in VPC should not touch squid.  We need to stop-processing before the transparent redirect happens.  Destination IP comes from DNS entry of apollo-integ.af.mtnsatcloud.com.  See BT-315 for more info."
+    },
+    {
+      "rule": {
+        "j": "DROP",
+        "i": "{infra_wan_root_if}",
+        "dport": "3142",
+        "p": "tcp"
+      },
+      "chain": "INPUT",
+      "comment": "we only want access to the cached ubuntu repo from the LAN side."
+    },
+    {
+      "rule": {
+        "j": "DNAT",
+        "to": "{stackato_poc_ip}",
+        "i": "{infra_wan_root_if}",
+        "p": "tcp",
+        "d": "{sled1_eth0_ip2}",
+        "dport": "80"
+      },
+      "chain": "PREROUTING",
+      "table": "nat",
+      "comment": "Port-forwarding to stackato proof-of-concept ip."
+    },
+    {
+      "rule": {
+        "j": "DNAT",
+        "to": "{stackato_poc_ip}",
+        "i": "{infra_wan_root_if}",
+        "p": "tcp",
+        "d": "{sled1_eth0_ip2}",
+        "dport": "443"
+      },
+      "chain": "PREROUTING",
+      "table": "nat",
+      "comment": "Port-forwarding to stackato proof-of-concept ip."
+    },
+    {
+      "rule": {
+        "j": "ACCEPT",
+        "i": "{infra_wan_root_if}",
+        "src": "{fw_seattle_ip}",
+        "dport": "22",
+        "p": "tcp"
+      },
+      "chain": "INPUT",
+      "comment": "SSH Bad... mmkay"
+    },
+    {
+      "rule": {
+        "j": "ACCEPT",
+        "i": "{infra_wan_root_if}",
+        "src": "{fw_miramar_ip}",
+        "dport": "22",
+        "p": "tcp"
+      },
+      "chain": "INPUT",
+      "comment": "SSH Bad... mmkay"
+    },
+    {
+      "rule": {
+        "j": "ACCEPT",
+        "i": "{infra_wan_root_if}",
+        "src": "{fw_vpc_ip}",
+        "dport": "22",
+        "p": "tcp"
+      },
+      "chain": "INPUT",
+      "comment": "SSH Bad... mmkay"
+    },
+    {
+      "rule": {
+        "j": "ACCEPT",
+        "i": "{infra_wan_root_if}",
+        "src": "54.208.34.70",
+        "p": "tcp",
+        "dport": "22"
+      },
+      "chain": "INPUT",
+      "comment": "Permit SSH for vpc in."
+    },
+    {
+      "rule": {
+        "j": "DROP",
+        "i": "{infra_wan_root_if}",
+        "dport": "22",
+        "p": "tcp"
+      },
+      "chain": "INPUT",
+      "comment": "SSH Bad... mmkay"
+    },
+    {
+      "rule": {
+        "j": "MASQUERADE",
+        "o": "eth0",
+        "s": "0.0.0.0/0"
+      },
+      "chain": "POSTROUTING",
+      "table": "nat",
+      "comment": "Masquerade for corp-net"
+    }
+  ],
+  "settings": {
+    "transparent_squid": true
+  }
+}

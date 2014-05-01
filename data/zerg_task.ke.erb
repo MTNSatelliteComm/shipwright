@@ -1,0 +1,70 @@
+{
+    "num_instances": 1,
+    "vm": {
+        "driver": {
+            "drivertype": "cloudformation",
+            "driveroptions": [
+                {
+                    "access_key_id": "<%= aws_key_id %>",
+                    "secret_access_key": "<%= aws_secret %>",
+                    "template_file": "template.json",
+                    "template_parameters": {
+                        "InstanceType": "m1.large",
+                        "KeyName": "<%= aws_keypair %>",
+                        "ShipName": "<%= ship_name %>",
+                        "ChefEnvironment": "integration",
+                        "Infra1PublicIp": "<%= public_ip_alloc_id %>",
+                        "S3ChefBucket": "<%= aws_bucket %>"
+                    },
+                    "rabbit": {
+                        "bunny_params": {
+                            "host": "<%= rabbit_host %>",
+                            "port": "<%= rabbit_port %>",
+                            "user": "<%= rabbit_user %>",
+                            "pass": "<%= rabbit_pass %>",
+                            "vhost": "<%= rabbit_vhost %>"
+                        },
+                        "queue": {
+                            "name": "<%= rabbit_queue %>",
+                            "params": {
+                                "durable": true
+                            }
+                        },
+                        "exchange": {
+                            "name": "<%= rabbit_exchange %>",
+                            "params": {
+                                "durable": true
+                            }
+                        },
+                        "event_timestamp_name": "@timestamp"
+                    },
+                    "storage": {
+                        "s3_bucket": {
+                            "name": "<%= aws_bucket %>",
+                            "public": false,
+                            "files": [ 
+                                "chef_init.rb",
+                                "validation.pem"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "instances": [],
+        "additional_files": [
+            {
+                "from": "chef_init.rb",
+                "to": "chef_init.rb"
+            },
+            {
+                "from": "<%= validator_path %>",
+                "to": "validation.pem"
+            },
+            {
+                "from": "template.json",
+                "to": "template.json"
+            }
+        ]
+    }
+}
