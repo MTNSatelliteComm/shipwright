@@ -7,6 +7,13 @@ A tool for quickly creating a ship-in-a-bottle cloud:
 * zerg task
 * list of gerrit reviews
 
+## Usage
+```
+git clone git@github.com:MTNSatelliteComm/shipwright.git
+cd shipwright
+rake install
+shipwright wizard
+```
 
 ## Licence
 
