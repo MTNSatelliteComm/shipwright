@@ -213,10 +213,10 @@ module Shipwright
             pipe_cmd_out.close
             output = pipe_cmd_in.read
             chef_repo_out = output[/http:\/\/review.mtnsatcloud.com\/\d+/]
-            chef_repo_sha = output[/\[master .{7}\]/][8..15]
+            chef_repo_id = chef_repo_out.split("/").last
             pipe_cmd_in.close
 
-            last_run_config[:chef_repo_sha] = chef_repo_sha
+            last_run_config[:chef_repo_sha] = chef_repo_id
             File.open(File.join(Dir.home, ".shipwright", "lastrun.yml"), "w") do |file|
                 file.write last_run_config.to_yaml
             end
@@ -234,10 +234,10 @@ module Shipwright
             pipe_cmd_out.close
             output = pipe_cmd_in.read
             ship_cookbook_out = output[/http:\/\/review.mtnsatcloud.com\/\d+/]
-            cookbook_ship_sha = output[/\[master .{7}\]/][8..15]
+            cookbook_ship_id = ship_cookbook_out.split("/").last
             pipe_cmd_in.close
 
-            last_run_config[:cookbook_ship_sha] = cookbook_ship_sha
+            last_run_config[:cookbook_ship_sha] = cookbook_ship_id
             File.open(File.join(Dir.home, ".shipwright", "lastrun.yml"), "w") do |file|
                 file.write last_run_config.to_yaml
             end
@@ -247,8 +247,8 @@ module Shipwright
 
             puts "-------------------------------------SUCCESS!------------------------------------"
             puts "Please get the two reviews below approved by someone from Platform Services team:"
-            puts "      #{chef_repo_out} sha: #{chef_repo_sha}"
-            puts "      #{ship_cookbook_out} sha: #{cookbook_ship_sha}"
+            puts "      #{chef_repo_out}"
+            puts "      #{ship_cookbook_out}"
             puts "                          "
             puts "Once approved and merged, start your ship cloud by running \"zerg rush #{ship_name}\" from your home folder."
         end

@@ -33,14 +33,14 @@ module Shipwright
 
             # cleanup chef-repo change
              pid = Process.spawn(
-                "ssh -p #{config[:gerrit_port]} #{config[:gerrit_user]}@#{config[:gerrit_host]} gerrit review --project cookbook-ship --abandon #{cleanup_config[:chef_repo_sha]}"
+                "ssh -p #{config[:gerrit_port]} #{config[:gerrit_user]}@#{config[:gerrit_host]} gerrit review --project chef-repo --abandon #{cleanup_config[:chef_repo_sha]},1"
             )
             Process.wait(pid)
             abort("ERROR: failed abandon chef-repo changes!") unless $?.exitstatus == 0
 
             # cleanup cookbook-ship change
              pid = Process.spawn(
-                "ssh -p #{config[:gerrit_port]} #{config[:gerrit_user]}@#{config[:gerrit_host]} gerrit review --project cookbook-ship --abandon #{cleanup_config[:cookbook_ship_sha]}"
+                "ssh -p #{config[:gerrit_port]} #{config[:gerrit_user]}@#{config[:gerrit_host]} gerrit review --project cookbook-ship --abandon #{cleanup_config[:cookbook_ship_sha]},1"
             )
             Process.wait(pid)
             abort("ERROR: failed abandon cookbook-ship changes!") unless $?.exitstatus == 0
