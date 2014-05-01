@@ -23,6 +23,7 @@
 
 require "shipwright/wizard"
 require "shipwright/cleaner"
+require "shipwright/utils"
 module Shipwright
   
 end

@@ -11,9 +11,9 @@ module Shipwright
         def self.start()
             config = Hash.new
             if File.exists?(File.join(Dir.home, ".shipwright", "config.yml"))
-                config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml"))).merge(YAML.load_file(File.join(Dir.home, ".shipwright", "config.yml")))
+                config = Utils.symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml"))).merge(YAML.load_file(File.join(Dir.home, ".shipwright", "config.yml")))
             else
-                config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml")))
+                config = Utils.symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml")))
             end
 
             config[:gerrit_user] = ask("Enter your Gerrit user name:  ") if config[:gerrit_user].nil?

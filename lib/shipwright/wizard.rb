@@ -35,9 +35,9 @@ module Shipwright
         def self.start()
             config = Hash.new
             if File.exists?(File.join(Dir.home, ".shipwright", "config.yml"))
-                config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml"))).merge(YAML.load_file(File.join(Dir.home, ".shipwright", "config.yml")))
+                config = Utils.symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml"))).merge(YAML.load_file(File.join(Dir.home, ".shipwright", "config.yml")))
             else
-                config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml")))
+                config = Utils.symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml")))
             end
 
             config[:gerrit_user] = ask("Enter your Gerrit user name:  ") if config[:gerrit_user].nil?
@@ -251,21 +251,6 @@ module Shipwright
             puts "      #{ship_cookbook_out} sha: #{cookbook_ship_sha}"
             puts "                          "
             puts "Once approved and merged, start your ship cloud by running \"zerg rush #{ship_name}\" from your home folder."
-        end
-
-        def self.symbolize_keys(hash)
-            hash.inject({}) {|result, (key, value)|
-                new_key = case key
-                    when String then key.to_sym
-                    else key
-                end
-                new_value = case value
-                    when Hash then symbolize_keys(value)
-                    else value
-                end
-                result[new_key] = new_value
-                result
-            }
         end
     end
 end
