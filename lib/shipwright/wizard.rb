@@ -183,7 +183,7 @@ module Shipwright
             abort("ERROR: failed to init zerg hive!") unless $?.exitstatus == 0
 
             pid = Process.spawn(
-                "zerg hive import /tmp/zerg-#{ship_name}/#{ship_name}.ke",
+                "zerg hive import /tmp/zerg-#{ship_name}/#{ship_name}.ke --force",
                 {
                     :chdir => Dir.home
                 }
@@ -192,29 +192,43 @@ module Shipwright
             abort("ERROR: failed to import zerg task!") unless $?.exitstatus == 0
 
             puts "Preparing gerrit reviews"
+            pipe_cmd_in, pipe_cmd_out = IO.pipe
             pid = Process.spawn(
                 "git add -A; git commit -m \"Adding a new ship in a bottle for user #{config[:gerrit_user]}\"; git review",
                 {
-                    :chdir => "/tmp/chef-repo"
+                    :chdir => "/tmp/chef-repo",
+                    :out => pipe_cmd_out
                 }
             )
             Process.wait(pid)
             abort("ERROR: failed to prepare chef-repo review!") unless $?.exitstatus == 0
+            pipe_cmd_out.close
+            chef_repo_out = pipe_cmd_in.read[/http:\/\/review.mtnsatcloud.com\/\d+/];
+            pipe_cmd_in.close
 
+
+            pipe_cmd_in, pipe_cmd_out = IO.pipe
             pid = Process.spawn(
                 "git add -A; git commit -m \"Adding a new ship in a bottle for user #{config[:gerrit_user]}\"; git review",
                 {
-                    :chdir => "/tmp/cookbook-ship"
+                    :chdir => "/tmp/cookbook-ship",
+                    :out => pipe_cmd_out
                 }
             )
             Process.wait(pid)
             abort("ERROR: failed to prepare cookbook-ship review!") unless $?.exitstatus == 0
+            pipe_cmd_out.close
+            ship_cookbook_out = pipe_cmd_in.read[/http:\/\/review.mtnsatcloud.com\/\d+/];
+            pipe_cmd_in.close
             
             FileUtils.rm_rf("/tmp/chef-repo")
             FileUtils.rm_rf("/tmp/cookbook-ship")
 
-            puts "SUCCESS!"
-            puts "Get the two review links above approved by someone from Platform services first."
+            puts "-------------------------------------SUCCESS!------------------------------------"
+            puts "Please get the two reviews below approved by someone from Platform Services team:"
+            puts "      #{chef_repo_out}"
+            puts "      #{ship_cookbook_out}"
+            puts "                          "
             puts "Once approved and merged, start your ship cloud by running \"zerg rush #{ship_name}\" from your home folder."
         end
 
