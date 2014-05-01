@@ -34,5 +34,10 @@ module Shipwright
         def wizard
             puts Shipwright::Wizard.start
         end
+
+        desc "cleanup", "run cleanup of last attempt"
+        def cleanup
+            puts Shipwright::Cleaner.start
+        end
     end
 end

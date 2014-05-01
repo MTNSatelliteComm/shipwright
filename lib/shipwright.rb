@@ -22,6 +22,7 @@
 #++
 
 require "shipwright/wizard"
+require "shipwright/cleaner"
 module Shipwright
   
 end
