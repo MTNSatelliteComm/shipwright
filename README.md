@@ -15,6 +15,12 @@ rake install
 shipwright wizard
 ```
 
+to cleanup a changeset/ip from previous run - must not have been merged yet:
+
+```
+shipwright clean
+```
+
 ## Licence
 
 Copyright 2014 by MTN Sattelite Communications

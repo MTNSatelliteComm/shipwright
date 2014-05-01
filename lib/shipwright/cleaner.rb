@@ -32,26 +32,32 @@ module Shipwright
             cleanup_config = YAML.load_file(File.join(Dir.home, ".shipwright", "lastrun.yml"))
 
             # cleanup chef-repo change
-             pid = Process.spawn(
-                "ssh -p #{config[:gerrit_port]} #{config[:gerrit_user]}@#{config[:gerrit_host]} gerrit review --project chef-repo --abandon #{cleanup_config[:chef_repo_sha]},1"
-            )
-            Process.wait(pid)
-            abort("ERROR: failed abandon chef-repo changes!") unless $?.exitstatus == 0
+            if cleanup_config[:chef_repo_sha] != nil
+                pid = Process.spawn(
+                    "ssh -p #{config[:gerrit_port]} #{config[:gerrit_user]}@#{config[:gerrit_host]} gerrit review --project chef-repo --abandon #{cleanup_config[:chef_repo_sha]},1"
+                )
+                Process.wait(pid)
+                abort("ERROR: failed abandon chef-repo changes!") unless $?.exitstatus == 0
+            end
 
-            # cleanup cookbook-ship change
-             pid = Process.spawn(
-                "ssh -p #{config[:gerrit_port]} #{config[:gerrit_user]}@#{config[:gerrit_host]} gerrit review --project cookbook-ship --abandon #{cleanup_config[:cookbook_ship_sha]},1"
-            )
-            Process.wait(pid)
-            abort("ERROR: failed abandon cookbook-ship changes!") unless $?.exitstatus == 0
+            if cleanup_config[:cookbook_ship_sha] != nil
+                # cleanup cookbook-ship change
+                 pid = Process.spawn(
+                    "ssh -p #{config[:gerrit_port]} #{config[:gerrit_user]}@#{config[:gerrit_host]} gerrit review --project cookbook-ship --abandon #{cleanup_config[:cookbook_ship_sha]},1"
+                )
+                Process.wait(pid)
+                abort("ERROR: failed abandon cookbook-ship changes!") unless $?.exitstatus == 0
+            end
 
             # cleanup ip address
-            aws = Fog::Compute::AWS.new(
-                :aws_access_key_id => cleanup_config[:aws_key],
-                :aws_secret_access_key => cleanup_config[:aws_secret]
-            )
-            elastic_ip = aws.release_address(cleanup_config[:eip_alloc])
-            abort("ERROR: failed abandon cookbook-ship changes!") unless elastic_ip[:body]["return"] == true
+            if cleanup_config[:eip_alloc] != nil
+                aws = Fog::Compute::AWS.new(
+                    :aws_access_key_id => cleanup_config[:aws_key],
+                    :aws_secret_access_key => cleanup_config[:aws_secret]
+                )
+                elastic_ip = aws.release_address(cleanup_config[:eip_alloc])
+                abort("ERROR: failed abandon cookbook-ship changes!") unless elastic_ip[:body]["return"] == true
+            end
 
             File.delete(File.join(Dir.home, ".shipwright", "lastrun.yml"))
             puts "SUCCESS!"
