@@ -34,8 +34,8 @@ module Shipwright
     class Wizard
         def self.start()
             config = Hash.new
-            if File.exists?(File.join("~", ".shipwright", "config.yml"))
-                config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml"))).merge(YAML.load_file(File.join("~", ".shipwright", "config.yml")))
+            if File.exists?(File.join(Dir.home, ".shipwright", "config.yml"))
+                config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml"))).merge(YAML.load_file(File.join(Dir.home, ".shipwright", "config.yml")))
             else
                 config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml")))
             end
@@ -43,8 +43,8 @@ module Shipwright
             config[:gerrit_user] = ask("Enter your Gerrit user name:  ") if config[:gerrit_user].nil?
             config[:validator_path] = ask("Enter full path to the location of mtn pipelines validator pem:  ") if config[:validator_path].nil?
 
-            FileUtils::mkdir_p(File.join("~", ".shipwright"))
-            File.open(File.join("~", ".shipwright", "config.yml"), "w") do |file|
+            FileUtils::mkdir_p(File.join(Dir.home, ".shipwright"))
+            File.open(File.join(Dir.home, ".shipwright", "config.yml"), "w") do |file|
                 file.write config.to_yaml
             end
 
@@ -174,19 +174,19 @@ module Shipwright
 
             #init zerg and import the new task
             pid = Process.spawn(
+                "zerg init",
                 {
-                    "HIVE_CWD" => "~"
-                },
-                "zerg init"
+                    :chdir => Dir.home
+                }
             )
             Process.wait(pid)
             abort("ERROR: failed to init zerg hive!") unless $?.exitstatus == 0
 
             pid = Process.spawn(
+                "zerg hive import /tmp/zerg-#{ship_name}/#{ship_name}.ke",
                 {
-                    "HIVE_CWD" => "~"
-                },
-                "zerg hive import /tmp/zerg-#{ship_name}/#{ship_name}.ke"
+                    :chdir => Dir.home
+                }
             )
             Process.wait(pid)
             abort("ERROR: failed to import zerg task!") unless $?.exitstatus == 0
