@@ -56,10 +56,10 @@ module Shipwright
             
             FileUtils.rm_rf("/tmp/chef-repo") if File.directory?("/tmp/chef-repo")
             pid = Process.spawn(
-                "git clone #{config[:gerrit_protocol]}://#{config[:gerrit_user]}@#{config[:gerrit_host]}:#{config[:gerrit_port]}/chef-repo /tmp/chef_repo"
+                "git clone #{config[:gerrit_protocol]}://#{config[:gerrit_user]}@#{config[:gerrit_host]}:#{config[:gerrit_port]}/chef-repo /tmp/chef-repo"
             )
             Process.wait(pid)
-            abort("ERROR: failed to clone chef_repo!") unless $?.exitstatus == 0
+            abort("ERROR: failed to clone chef-repo!") unless $?.exitstatus == 0
 
             puts "Cloning #{config[:gerrit_protocol]}://#{config[:gerrit_user]}@#{config[:gerrit_host]}:#{config[:gerrit_port]}/cookbook-ship"
             FileUtils.rm_rf("/tmp/cookbook-ship") if File.directory?("/tmp/cookbook-ship")
@@ -94,7 +94,7 @@ module Shipwright
             File.open("/tmp/cookbook-ship/recipes/#{ship_name}.rb", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
 
             puts "Creating a new public elastic ip for infra-#{ship_name}"
-            aws_info = JSON.parse( IO.read("/tmp/chef_repo/data_bags/ship-in-a-bottle/aws_access.json") )
+            aws_info = JSON.parse( IO.read("/tmp/chef-repo/data_bags/ship-in-a-bottle/aws_access.json") )
             aws = Fog::Compute::AWS.new(
                 :aws_access_key_id => aws_info["aws_key"],
                 :aws_secret_access_key => aws_info["aws_secret"]
@@ -109,24 +109,24 @@ module Shipwright
             sources = {
                 :public_ip => elastic_ip["publicIp"]
             }
-            File.open("/tmp/chef_repo/data_bags/ships/#{ship_name}.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+            File.open("/tmp/chef-repo/data_bags/ships/#{ship_name}.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
 
             # create the infra databags folder
-            FileUtils::mkdir_p("/tmp/chef_repo/data_bags/infra-#{ship_name}")
+            FileUtils::mkdir_p("/tmp/chef-repo/data_bags/infra-#{ship_name}")
             puts "Preparing chef-repo/data_bags/infra-#{ship_name}/dhcpd.json"
             item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "dhcpd.json.erb"), 'r').read
             sources = {}
-            File.open("/tmp/chef_repo/data_bags/infra-#{ship_name}/dhcpd.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+            File.open("/tmp/chef-repo/data_bags/infra-#{ship_name}/dhcpd.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
 
             puts "Preparing chef-repo/data_bags/infra-#{ship_name}/dns.json"
             item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "dns.json.erb"), 'r').read
             sources = {}
-            File.open("/tmp/chef_repo/data_bags/infra-#{ship_name}/dns.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+            File.open("/tmp/chef-repo/data_bags/infra-#{ship_name}/dns.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
 
             puts "Preparing chef-repo/data_bags/infra-#{ship_name}/firewall.json"
             item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "firewall.json.erb"), 'r').read
             sources = {}
-            File.open("/tmp/chef_repo/data_bags/infra-#{ship_name}/firewall.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+            File.open("/tmp/chef-repo/data_bags/infra-#{ship_name}/firewall.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
 
             puts "Preparing chef-repo/data_bags/infra-#{ship_name}/variables.json"
             item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "variables.json.erb"), 'r').read
@@ -135,7 +135,7 @@ module Shipwright
                 :public_ip => elastic_ip["publicIp"],
                 :ship_short_name => ship_short_name
             }
-            File.open("/tmp/chef_repo/data_bags/infra-#{ship_name}/variables.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+            File.open("/tmp/chef-repo/data_bags/infra-#{ship_name}/variables.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
 
             puts "Generating zerg task"
             FileUtils::mkdir_p("/tmp/zerg-#{ship_name}")
@@ -153,7 +153,7 @@ module Shipwright
 
             puts "Preparing #{ship_name}.ke file"
             item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "zerg_task.ke.erb"), 'r').read
-            rabbit_info = JSON.parse( IO.read("/tmp/chef_repo/data_bags/ship-in-a-bottle/rabbit_info.json") )
+            rabbit_info = JSON.parse( IO.read("/tmp/chef-repo/data_bags/ship-in-a-bottle/rabbit_info.json") )
             sources = {
                 :aws_key_id => aws_info["aws_key"],
                 :aws_secret => aws_info["aws_secret"],
@@ -197,11 +197,11 @@ module Shipwright
             pid = Process.spawn(
                 "git add -A; git commit -t /tmp/shipwright-commit-message; git review",
                 {
-                    :chdir => "/tmp/chef_repo"
+                    :chdir => "/tmp/chef-repo"
                 }
             )
             Process.wait(pid)
-            abort("ERROR: failed to prepare chef_repo review!") unless $?.exitstatus == 0
+            abort("ERROR: failed to prepare chef-repo review!") unless $?.exitstatus == 0
 
             pid = Process.spawn(
                 "git add -A; git commit -t /tmp/shipwright-commit-message; git review",
