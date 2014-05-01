@@ -192,10 +192,8 @@ module Shipwright
             abort("ERROR: failed to import zerg task!") unless $?.exitstatus == 0
 
             puts "Preparing gerrit reviews"
-            FileUtils.rm "/tmp/shipwright-commit-message" if File.exist?("/tmp/shipwright-commit-message")
-            File.open("/tmp/shipwright-commit-message", 'w') { |file| file.write("Adding a new ship in a bottle for user #{config[:gerrit_user]}") }
             pid = Process.spawn(
-                "git add -A; git commit -t /tmp/shipwright-commit-message; git review",
+                "git add -A; git commit -m \"Adding a new ship in a bottle for user #{config[:gerrit_user]}\"; git review",
                 {
                     :chdir => "/tmp/chef-repo"
                 }
@@ -204,7 +202,7 @@ module Shipwright
             abort("ERROR: failed to prepare chef-repo review!") unless $?.exitstatus == 0
 
             pid = Process.spawn(
-                "git add -A; git commit -t /tmp/shipwright-commit-message; git review",
+                "git add -A; git commit -m \"Adding a new ship in a bottle for user #{config[:gerrit_user]}\"; git review",
                 {
                     :chdir => "/tmp/cookbook-ship"
                 }
