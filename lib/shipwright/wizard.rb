@@ -35,9 +35,9 @@ module Shipwright
         def self.start()
             config = Hash.new
             if File.exists?(File.join(Dir.home, ".shipwright", "config.yml"))
-                config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml"))).merge(YAML.load_file(File.join(Dir.home, ".shipwright", "config.yml")))
+                config = Utils.symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml"))).merge(YAML.load_file(File.join(Dir.home, ".shipwright", "config.yml")))
             else
-                config = symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml")))
+                config = Utils.symbolize_keys(YAML.load_file(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "default.yml")))
             end
 
             config[:gerrit_user] = ask("Enter your Gerrit user name:  ") if config[:gerrit_user].nil?
@@ -102,6 +102,14 @@ module Shipwright
             elastic_ip = aws.allocate_address("vpc")[:body]
 
             ap elastic_ip
+
+            last_run_config = Hash.new
+            last_run_config[:eip_alloc] = elastic_ip["allocationId"]
+            last_run_config[:aws_key] = aws_info["aws_key"]
+            last_run_config[:aws_secret] = aws_info["aws_secret"]
+            File.open(File.join(Dir.home, ".shipwright", "lastrun.yml"), "w") do |file|
+                file.write last_run_config.to_yaml
+            end
 
             puts "Preparing databags for #{ship_name} and infra-#{ship_name} in chef-repo/data_bags :"
             puts "Preparing chef-repo/data_bags/ships/#{ship_name}.json"
@@ -203,9 +211,15 @@ module Shipwright
             Process.wait(pid)
             abort("ERROR: failed to prepare chef-repo review!") unless $?.exitstatus == 0
             pipe_cmd_out.close
-            chef_repo_out = pipe_cmd_in.read[/http:\/\/review.mtnsatcloud.com\/\d+/];
+            output = pipe_cmd_in.read
+            chef_repo_out = output[/http:\/\/review.mtnsatcloud.com\/\d+/]
+            chef_repo_id = chef_repo_out.split("/").last
             pipe_cmd_in.close
 
+            last_run_config[:chef_repo_sha] = chef_repo_id
+            File.open(File.join(Dir.home, ".shipwright", "lastrun.yml"), "w") do |file|
+                file.write last_run_config.to_yaml
+            end
 
             pipe_cmd_in, pipe_cmd_out = IO.pipe
             pid = Process.spawn(
@@ -218,8 +232,15 @@ module Shipwright
             Process.wait(pid)
             abort("ERROR: failed to prepare cookbook-ship review!") unless $?.exitstatus == 0
             pipe_cmd_out.close
-            ship_cookbook_out = pipe_cmd_in.read[/http:\/\/review.mtnsatcloud.com\/\d+/];
+            output = pipe_cmd_in.read
+            ship_cookbook_out = output[/http:\/\/review.mtnsatcloud.com\/\d+/]
+            cookbook_ship_id = ship_cookbook_out.split("/").last
             pipe_cmd_in.close
+
+            last_run_config[:cookbook_ship_sha] = cookbook_ship_id
+            File.open(File.join(Dir.home, ".shipwright", "lastrun.yml"), "w") do |file|
+                file.write last_run_config.to_yaml
+            end
             
             FileUtils.rm_rf("/tmp/chef-repo")
             FileUtils.rm_rf("/tmp/cookbook-ship")
@@ -230,21 +251,6 @@ module Shipwright
             puts "      #{ship_cookbook_out}"
             puts "                          "
             puts "Once approved and merged, start your ship cloud by running \"zerg rush #{ship_name}\" from your home folder."
-        end
-
-        def self.symbolize_keys(hash)
-            hash.inject({}) {|result, (key, value)|
-                new_key = case key
-                    when String then key.to_sym
-                    else key
-                end
-                new_value = case value
-                    when Hash then symbolize_keys(value)
-                    else value
-                end
-                result[new_key] = new_value
-                result
-            }
         end
     end
 end
