@@ -115,6 +115,7 @@ module Shipwright
             puts "Preparing chef-repo/data_bags/ships/#{ship_name}.json"
             item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "ship_databag.json.erb"), 'r').read
             sources = {
+                :ship_name => ship_name,
                 :public_ip => elastic_ip["publicIp"]
             }
             File.open("/tmp/chef-repo/data_bags/ships/#{ship_name}.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
@@ -245,12 +246,14 @@ module Shipwright
             FileUtils.rm_rf("/tmp/chef-repo")
             FileUtils.rm_rf("/tmp/cookbook-ship")
 
-            puts "-------------------------------------SUCCESS!------------------------------------"
+            puts "--------------------------------------------------ALL DONE!--------------------------------------------------"
             puts "Please get the two reviews below approved by someone from Platform Services team:"
             puts "      #{chef_repo_out}"
             puts "      #{ship_cookbook_out}"
             puts "                          "
             puts "Once approved and merged, start your ship cloud by running \"zerg rush #{ship_name}\" from your home folder."
+            puts "                          "
+            puts "Public IP: #{elastic_ip["publicIp"]}"
         end
     end
 end

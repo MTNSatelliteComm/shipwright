@@ -15,7 +15,6 @@
         "ShipName": {
             "Description": "Test ship name",
             "Type": "String",
-            "AllowedValues": ["mtn-aws1", "mtn-aws2"],
             "ConstraintDescription": "Must be a valid ship name from AWS fleet."
         },
         "ChefOrganization": {
@@ -102,7 +101,8 @@
                 "EnableDnsHostnames" : "true",
                 "Tags" : [
                     { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
-                    { "Key" : "Network", "Value" : "Public" }
+                    { "Key" : "Network", "Value" : "Public" },
+                    { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "VPC" ] ] } }
                 ]
             }
         },
@@ -113,7 +113,8 @@
                 "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "Public", "CIDR" ]},
                 "Tags" : [
                   { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
-                  { "Key" : "Network", "Value" : "Public" }
+                  { "Key" : "Network", "Value" : "Public" },
+                  { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "PublicSubnet" ] ] } }
                 ]
             }
         },
@@ -122,7 +123,8 @@
             "Properties" : {
                 "Tags" : [
                     { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
-                    { "Key" : "Network", "Value" : "Public" }
+                    { "Key" : "Network", "Value" : "Public" },
+                    { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "InternetGateway" ] ] } }
                 ]
             }
         },
@@ -139,7 +141,8 @@
                 "VpcId" : { "Ref" : "VPC" },
                 "Tags" : [
                     { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
-                    { "Key" : "Network", "Value" : "Public" }
+                    { "Key" : "Network", "Value" : "Public" },
+                    { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "PublicRouteTable" ] ] } }
                 ]
             }
         },
@@ -166,7 +169,8 @@
                 "CidrBlock" : { "Fn::FindInMap" : [ "SubnetConfig", "Private", "CIDR" ]},
                 "Tags" : [
                     { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
-                    { "Key" : "Network", "Value" : "Private" }
+                    { "Key" : "Network", "Value" : "Private" },
+                    { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "PrivateSubnet" ] ] } }
                 ]
             }
         },
@@ -176,7 +180,8 @@
                 "VpcId" : { "Ref" : "VPC" },
                 "Tags" : [
                     { "Key" : "Application", "Value" : { "Ref" : "AWS::StackId" } },
-                    { "Key" : "Network", "Value" : "Private" }
+                    { "Key" : "Network", "Value" : "Private" },
+                    { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "PrivateRouteTable" ] ] } }
                 ]
             }
         },
@@ -297,6 +302,11 @@
                     { "IpProtocol" : "tcp",  "FromPort" : "5671",  "ToPort" : "5671",  "CidrIp" : "0.0.0.0/0"} ,
                     { "IpProtocol" : "tcp",  "FromPort" : "2055",  "ToPort" : "2055",  "CidrIp" : "0.0.0.0/0"} ,
                     { "IpProtocol" : "tcp",  "FromPort" : "9418",  "ToPort" : "9418",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "tcp",  "FromPort" : "15672",  "ToPort" : "15672",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "tcp",  "FromPort" : "55672",  "ToPort" : "55672",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "tcp",  "FromPort" : "16672",  "ToPort" : "16672",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "tcp",  "FromPort" : "3030",  "ToPort" : "3030",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "udp",  "FromPort" : "3030",  "ToPort" : "3030",  "CidrIp" : "0.0.0.0/0"} ,
                     { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "CidrIp" : "0.0.0.0/0"} 
                 ]
             }
@@ -314,6 +324,11 @@
                     { "IpProtocol" : "tcp",  "FromPort" : "5671", "ToPort" : "5671", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } ,
                     { "IpProtocol" : "tcp",  "FromPort" : "2055", "ToPort" : "2055", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
                     { "IpProtocol" : "tcp",  "FromPort" : "9418", "ToPort" : "9418", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
+                    { "IpProtocol" : "tcp",  "FromPort" : "15672", "ToPort" : "15672", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
+                    { "IpProtocol" : "tcp",  "FromPort" : "55672", "ToPort" : "55672", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
+                    { "IpProtocol" : "tcp",  "FromPort" : "16672", "ToPort" : "16672", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
+                    { "IpProtocol" : "tcp",  "FromPort" : "3030", "ToPort" : "3030", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
+                    { "IpProtocol" : "udp",  "FromPort" : "3030", "ToPort" : "3030", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
                     { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } }
                 ]
             }
@@ -329,7 +344,16 @@
                 ],
                 "SourceDestCheck" : "false",
                 "SubnetId" : { "Ref" : "PublicSubnet" },
-                "Tags" : [ {"Key" : "Name", "Value" : "Interface 0"}, {"Key" : "Interface", "Value" : "eth0"} ]
+                "Tags" : [ 
+                    {
+                        "Key" : "Name", 
+                        "Value" : { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Interface 0" ] ] }
+                    }, 
+                    {
+                        "Key" : "Interface", 
+                        "Value" : "eth0"
+                    } 
+                ]
             }
         },
         "Infra1EIPAssociation" : {
@@ -405,8 +429,8 @@
                             [
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
-                                "{\n", "  log=$(</tmp/chef_init.log)\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1 : $log\" '", { "Ref": "Infra1WaitHandle" }, 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "Infra1WaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n", 
@@ -462,7 +486,15 @@
                             ]
                         ]
                     }
-                }
+                },
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Infra1" ] ] 
+                        } 
+                    } 
+                ]
             }
         },
         "Sled2" : {
@@ -519,8 +551,8 @@
                             [
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
-                                "{\n", "  log=$(</tmp/chef_init.log)\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1 : $log\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n",  
@@ -575,7 +607,15 @@
                         }
                     ]
                 },
-                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }]
+                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }],
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled2" ] ] 
+                        } 
+                    } 
+                ]
             }
         },
         "Sled3" : {
@@ -605,7 +645,7 @@
                                     "Fn::Join": ["",
                                         [
                                             "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::aws-sled3]\"\n    ]\n",
+                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\"\n    ]\n",
                                             "}"
                                         ]
                                     ]
@@ -632,8 +672,8 @@
                             [
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
-                                "{\n", "  log=$(</tmp/chef_init.log)\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1 : $log\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n",  
@@ -684,7 +724,15 @@
                         }
                     ]
                 },
-                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }]
+                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }],
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled3" ] ] 
+                        } 
+                    } 
+                ]
             }
         },
         "Sled4" : {
@@ -741,8 +789,8 @@
                             [
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
-                                "{\n", "  log=$(</tmp/chef_init.log)\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1 : $log\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n",   
@@ -797,7 +845,15 @@
                         }
                     ]
                 },
-                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }]
+                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }],
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled4" ] ] 
+                        } 
+                    } 
+                ]
             }
         },
         "Sled5" : {
@@ -854,8 +910,8 @@
                             [
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
-                                "{\n", "  log=$(</tmp/chef_init.log)\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1 : $log\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n",   
@@ -910,7 +966,15 @@
                         }
                     ]
                 },
-                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }]
+                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }],
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled5" ] ] 
+                        } 
+                    } 
+                ]
             }
         },
         "Sled6" : {
@@ -967,8 +1031,8 @@
                             [
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
-                                "{\n", "  log=$(</tmp/chef_init.log)\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1 : $log\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n",   
@@ -1023,7 +1087,15 @@
                         }
                     ]
                 },
-                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }]
+                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }],
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled6" ] ] 
+                        } 
+                    } 
+                ]
             }
         },
         "Sled7" : {
@@ -1080,8 +1152,8 @@
                             [
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
-                                "{\n", "  log=$(</tmp/chef_init.log)\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1 : $log\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n",  
@@ -1136,7 +1208,15 @@
                         }
                     ]
                 },
-                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }]
+                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }],
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled7" ] ] 
+                        } 
+                    } 
+                ]
             }
         },
         "Sled8" : {
@@ -1193,8 +1273,8 @@
                             [
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
-                                "{\n", "  log=$(</tmp/chef_init.log)\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1 : $log\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n",  
@@ -1249,7 +1329,15 @@
                         }
                     ]
                 },
-                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }]
+                "SecurityGroupIds" : [{ "Ref" : "NonInfraSledSecurityGroup" }],
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled8" ] ] 
+                        } 
+                    } 
+                ]
             }
         }        
     },
