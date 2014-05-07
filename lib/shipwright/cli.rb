@@ -39,5 +39,10 @@ module Shipwright
         def cleanup
             puts Shipwright::Cleaner.start
         end
+
+        desc "cleanup", "destroy current environment"
+        def destroy
+            puts Shipwright::Cleaner.destroy
+        end
     end
 end

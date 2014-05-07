@@ -27,6 +27,18 @@ module Shipwright
             cleanup(config)
         end
 
+        def self.destroy
+            if File.exists?(File.join(Dir.home, ".shipwright", "config.yml"))
+                File.delete(File.join(Dir.home, ".shipwright", "config.yml"))
+            end
+
+            if File.exists?(File.join(Dir.home, ".shipwright", "lastrun.yml"))
+                File.delete(File.join(Dir.home, ".shipwright", "lastrun.yml"))
+            end
+            
+            puts "SUCCESS!"
+        end
+
         def self.cleanup(config)
             abort("Nothing to cleanup!") unless File.exists?(File.join(Dir.home, ".shipwright", "lastrun.yml"))
             cleanup_config = YAML.load_file(File.join(Dir.home, ".shipwright", "lastrun.yml"))
