@@ -43,6 +43,16 @@ module Shipwright
             config[:gerrit_user] = ask("Enter your Gerrit user name:  ") if config[:gerrit_user].nil?
             config[:validator_path] = ask("Enter full path to the location of mtn pipelines validator pem:  ") if config[:validator_path].nil?
 
+            if config[:chef_env].nil?
+                choose do |menu|
+                    menu.prompt = "Which chef environment do you want to use for this ship?  "
+
+                    menu.choice(:staging) { config[:chef_env] = "staging" }
+                    menu.choice(:integration) { config[:chef_env] = "integration" }
+                    menu.choice(:prod) { config[:chef_env] = "prod" }
+                end
+            end
+
             FileUtils::mkdir_p(File.join(Dir.home, ".shipwright"))
             File.open(File.join(Dir.home, ".shipwright", "config.yml"), "w") do |file|
                 file.write config.to_yaml
@@ -168,6 +178,7 @@ module Shipwright
                 :aws_secret => aws_info["aws_secret"],
                 :aws_keypair => aws_info["aws_keypair"],
                 :ship_name => ship_name,
+                :chef_env => config[:chef_env],
                 :public_ip_alloc_id => elastic_ip["allocationId"],
                 :aws_bucket => "sib-#{ship_short_name}",
                 :rabbit_host => rabbit_info["rabbit_host"],

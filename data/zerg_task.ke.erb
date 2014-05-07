@@ -12,7 +12,7 @@
                         "InstanceType": "m1.small",
                         "KeyName": "<%= aws_keypair %>",
                         "ShipName": "<%= ship_name %>",
-                        "ChefEnvironment": "integration",
+                        "ChefEnvironment": "<%= chef_env %>",
                         "Infra1PublicIp": "<%= public_ip_alloc_id %>",
                         "S3ChefBucket": "<%= aws_bucket %>"
                     },
