@@ -645,7 +645,7 @@
                                     "Fn::Join": ["",
                                         [
                                             "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\"\n    ]\n",
+                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::base]\"\n    ]\n",
                                             "}"
                                         ]
                                     ]
