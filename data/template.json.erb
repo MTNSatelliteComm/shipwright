@@ -22,6 +22,11 @@
             "Type": "String",
             "Default": "mtn-pipelines"
         },
+        "Validator": {
+            "Description": "validation client name.",
+            "Type": "String",
+            "Default": "mtn-pipelines"
+        },
         "ChefEnvironment": {
             "Description": "The Chef Environment.",
             "Type": "String",
@@ -465,7 +470,7 @@
                                 " || error_exit 'Failed to run cfn-init'\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/validation.pem /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef Server validation key'\n",
-                                "sudo ruby /etc/chef/chef_init.rb", " -b ", { "Ref": "S3ChefBucket" }, " -c \"https://private-chef.mtnsatcloud.com\" -d ", { "Ref": "DomainName" }, " -e ", { "Ref": "ChefEnvironment" }, " -o ", { "Ref": "ChefOrganization" }, " -s ", { "Ref": "ShipName" }, " -u -l infra1 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n",
+                                "sudo ruby /etc/chef/chef_init.rb", " -b ", { "Ref": "S3ChefBucket" }, " -c \"https://private-chef.mtnsatcloud.com\" -d ", { "Ref": "DomainName" }, " -e ", { "Ref": "ChefEnvironment" }, " -o ", { "Ref": "ChefOrganization" }, " -s ", { "Ref": "ShipName" }, " -v ", { "Ref": "Validator" }, " -u -l infra1 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n",
                                 "sleep 240\n", 
                                 "JOBURL=http://jenkins-ci.mtnsatcloud.com/job/promote-to-ship\n",
                                 "JSONURL=${JOBURL}/lastBuild/api/json\n",
