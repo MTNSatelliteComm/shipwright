@@ -40,7 +40,7 @@ module Shipwright
             puts Shipwright::Cleaner.start
         end
 
-        desc "cleanup", "destroy current environment"
+        desc "destroy", "destroy current environment"
         def destroy
             puts Shipwright::Cleaner.destroy
         end
