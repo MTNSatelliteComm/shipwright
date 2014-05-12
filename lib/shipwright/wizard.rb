@@ -42,6 +42,7 @@ module Shipwright
 
             config[:gerrit_user] = ask("Enter your Gerrit user name:  ") if config[:gerrit_user].nil?
             config[:validator_path] = ask("Enter full path to the location of mtn pipelines validator pem:  ") if config[:validator_path].nil?
+            config[:validator_client] = ask("Enter the name of your chef validation client (e.g. 'johndoe-validator'):  ") if config[:validator_client].nil?
 
             if config[:chef_env].nil?
                 choose do |menu|
@@ -188,7 +189,8 @@ module Shipwright
                 :rabbit_vhost => rabbit_info["rabbit_vhost"],
                 :rabbit_queue => rabbit_info["rabbit_queue"]["name"],
                 :rabbit_exchange => rabbit_info["rabbit_exchange"]["name"],
-                :validator_path => config[:validator_path]
+                :validator_path => config[:validator_path],
+                :validator_client => config[:validator_client]
             }
             File.open("/tmp/zerg-#{ship_name}/#{ship_name}.ke", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
 
