@@ -8,6 +8,11 @@ A tool for quickly creating a ship-in-a-bottle cloud:
 * list of gerrit reviews
 
 ## Usage
+
+* Make sure you are setup for MTN gerrit access with all the correct keys and permissions. 
+* Make sure that your gerrit username is in your global gitconfig.
+* Obtain a validator key from someone on the Platform Services team. 
+
 ```
 git clone git@github.com:MTNSatelliteComm/shipwright.git
 cd shipwright
