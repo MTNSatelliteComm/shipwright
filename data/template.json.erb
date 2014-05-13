@@ -15,12 +15,19 @@
         "ShipName": {
             "Description": "Test ship name",
             "Type": "String",
+            "AllowedValues": ["mtn-aws1", "mtn-aws2"],
             "ConstraintDescription": "Must be a valid ship name from AWS fleet."
         },
         "ChefOrganization": {
             "Description": "The Organization name used in Hosted Chef.",
             "Type": "String",
             "Default": "mtn-pipelines"
+        },
+        "ChefClientRetries": {
+            "Description": "How many times to retry chef client run before giving up.",
+            "Type": "Number",
+            "Default": "3",
+            "MinValue" : "1"
         },
         "Validator": {
             "Description": "validation client name.",
@@ -470,7 +477,7 @@
                                 " || error_exit 'Failed to run cfn-init'\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/validation.pem /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef Server validation key'\n",
-                                "sudo ruby /etc/chef/chef_init.rb", " -b ", { "Ref": "S3ChefBucket" }, " -c \"https://private-chef.mtnsatcloud.com\" -d ", { "Ref": "DomainName" }, " -e ", { "Ref": "ChefEnvironment" }, " -o ", { "Ref": "ChefOrganization" }, " -s ", { "Ref": "ShipName" }, " -v ", { "Ref": "Validator" }, " -u -l infra1 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n",
+                                "sudo ruby /etc/chef/chef_init.rb", " -b ", { "Ref": "S3ChefBucket" }, " -c \"https://private-chef.mtnsatcloud.com\" -d ", { "Ref": "DomainName" }, " -e ", { "Ref": "ChefEnvironment" }, " -o ", { "Ref": "ChefOrganization" }, " -r ", { "Ref": "ChefClientRetries" }, " -s ", { "Ref": "ShipName" }, " -v ", { "Ref": "Validator" }, " -u -l infra1 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n",
                                 "sleep 240\n", 
                                 "JOBURL=http://jenkins-ci.mtnsatcloud.com/job/promote-to-ship\n",
                                 "JSONURL=${JOBURL}/lastBuild/api/json\n",
@@ -590,7 +597,7 @@
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "# Fixup the server URL in client.rb\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled2 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
+                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled2 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
                                 "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n"
                             ]
@@ -707,7 +714,7 @@
                                 "sudo s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "# Fixup the server URL in client.rb\n", 
                                 "sudo s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -a \"stackato\" -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled3 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
+                                "sudo ruby /etc/chef/chef_init.rb -a \"stackato\" -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled3 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
                                 "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n"
                             ]
@@ -828,7 +835,7 @@
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "# Fixup the server URL in client.rb\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled4 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
+                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled4 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
                                 "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n"
                             ]
@@ -949,7 +956,7 @@
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "# Fixup the server URL in client.rb\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled5 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
+                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled5 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
                                 "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n"
                             ]
@@ -1070,7 +1077,7 @@
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "# Fixup the server URL in client.rb\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled6 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
+                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled6 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
                                 "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n"
                             ]
@@ -1191,7 +1198,7 @@
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "# Fixup the server URL in client.rb\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled7 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
+                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled7 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
                                 "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n"
                             ]
@@ -1312,7 +1319,7 @@
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
                                 "# Fixup the server URL in client.rb\n", 
                                 "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled8 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
+                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled8 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
                                 "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
                                 "'\n"
                             ]
