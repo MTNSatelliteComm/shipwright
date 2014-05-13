@@ -16,6 +16,7 @@ bucket_name = "ship-in-a-bottle"
 upload_key = false
 debug_chef = false
 user_account = "ubuntu"
+retries = 1
 
 #
 # process command line
@@ -27,6 +28,7 @@ OptionParser.new do |o|
     o.on('-d', '--domain-name domain', 'Domain name to use. Default is mtnsatcloud.com') { |domain| domain_name = domain }
     o.on('-e', '--environment-name env', 'Chef environment. Default is prod') { |env| environment = env }
     o.on('-o', '--organization-name org', 'Chef organization') { |org| organization = org }
+    o.on('-r', '--retry-chef ret', 'number of times to retry chef-client run') { |ret| retries = ret.to_i }
     o.on('-s', '--ship-name ship', 'Name of the entire ship') { |ship| ship_name = ship }
     o.on('-l', '--sled-name sled', 'Name of the current sled') { |sled| sled_name = sled }
     o.on('-u', '--upload-key', 'upload client key for later cleanup') { upload_key = true }
@@ -121,9 +123,14 @@ if upload_key == true
 end
 
 # run chef client
-chef_client_pid = (debug_chef == true) ? Process.spawn("chef-client -j /etc/chef/first-boot.json -l debug 2>&1") : Process.spawn("chef-client -j /etc/chef/first-boot.json 2>&1")
-Process.wait(chef_client_pid)
-chef_run_success = ($?.exitstatus == 0) 
+chef_run_success = true
+until retries == 0    
+    chef_client_pid = (debug_chef == true) ? Process.spawn("chef-client -j /etc/chef/first-boot.json -l debug 2>&1") : Process.spawn("chef-client -j /etc/chef/first-boot.json 2>&1")
+    Process.wait(chef_client_pid)
+    chef_run_success = ($?.exitstatus == 0) 
+    break unless chef_run_success == false
+    retries = retries - 1
+end
 
 if upload_key == true
     # upload client key file to s3
