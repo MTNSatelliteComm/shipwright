@@ -111,11 +111,40 @@ module Shipwright
                 :aws_secret_access_key => aws_info["aws_secret"]
             )
             elastic_ip = aws.allocate_address("vpc")[:body]
-
             ap elastic_ip
+
+            puts "Adding #{elastic_ip["publicIp"]} IP address to CICD security group for HTTP, HTTPS and SSH"
+            result = aws.authorize_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{elastic_ip["publicIp"]}/32",
+                    "FromPort" => "22",
+                    "ToPort" => "22",
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to allow SSH ingress for cicd") unless result[:body]["return"] == true
+            result = aws.authorize_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{elastic_ip["publicIp"]}/32",
+                    "FromPort" => "80",
+                    "ToPort" => "80",
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to allow HTTP ingress for cicd") unless result[:body]["return"] == true
+            result = aws.authorize_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{elastic_ip["publicIp"]}/32",
+                    "FromPort" => "443",
+                    "ToPort" => "443",
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to allow HTTPS ingress for cicd") unless result[:body]["return"] == true
 
             last_run_config = Hash.new
             last_run_config[:eip_alloc] = elastic_ip["allocationId"]
+            last_run_config[:eip_address] = elastic_ip["publicIp"]
             last_run_config[:aws_key] = aws_info["aws_key"]
             last_run_config[:aws_secret] = aws_info["aws_secret"]
             File.open(File.join(Dir.home, ".shipwright", "lastrun.yml"), "w") do |file|

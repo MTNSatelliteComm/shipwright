@@ -71,6 +71,35 @@ module Shipwright
                 abort("ERROR: failed abandon cookbook-ship changes!") unless elastic_ip[:body]["return"] == true
             end
 
+            # cleanup security group ingresses
+            result = aws.revoke_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{cleanup_config[:eip_address]}/32",
+                    "FromPort" => "22",
+                    "ToPort" => "22",
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to revoke SSH ingress for cicd") unless result[:body]["return"] == true
+            result = aws.revoke_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{cleanup_config[:eip_address]}/32",
+                    "FromPort" => "80",
+                    "ToPort" => "80",
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to revoke HTTP ingress for cicd") unless result[:body]["return"] == true
+            result = aws.revoke_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{cleanup_config[:eip_address]}/32",
+                    "FromPort" => "443",
+                    "ToPort" => "443",
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to revoke HTTP ingress for cicd") unless result[:body]["return"] == true
+
             File.delete(File.join(Dir.home, ".shipwright", "lastrun.yml"))
             puts "SUCCESS!"
         end
