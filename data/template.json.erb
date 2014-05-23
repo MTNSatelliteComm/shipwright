@@ -403,7 +403,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::aws-sled1]\" ] }"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled1]\" ] }"
                                         ]
                                     ]
                                 },
