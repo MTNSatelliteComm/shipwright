@@ -199,6 +199,46 @@ module Shipwright
             sources = {}
             File.open("/tmp/zerg-#{ship_name}/template.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
 
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf.conf.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf.conf", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "ec2.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/ec2.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf_infra1.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf_infra1.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf_sled2.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf_sled2.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf_sled3.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf_sled3.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf_sled4.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf_sled4.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf_sled5.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf_sled5.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf_sled6.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf_sled6.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf_sled7.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf_sled7.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
+            item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "serf_sled8.json.erb"), 'r').read
+            sources = {}
+            File.open("/tmp/zerg-#{ship_name}/serf_sled8.json", 'w') { |file| file.write(Erbalize.erbalize_hash(item_template, sources)) }
+
 
             puts "Preparing #{ship_name}.ke file"
             item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "zerg_task.ke.erb"), 'r').read

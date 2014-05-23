@@ -273,28 +273,28 @@
                 }
             }
         },
-        "Infra1WaitHandle": {
+        "SerfSetupWaitHandle": {
             "Type": "AWS::CloudFormation::WaitConditionHandle"
         },
-        "Infra1WaitCondition": {
+        "SerfSetupWaitCondition": {
             "Type": "AWS::CloudFormation::WaitCondition",
             "DependsOn": "Infra1",
             "Properties": {
                 "Handle": {
-                    "Ref": "Infra1WaitHandle"
+                    "Ref": "SerfSetupWaitHandle"
                 },
                 "Timeout": "3600"
             }
         },
-        "OtherSledsWaitHandle": {
+        "StackFinishedWaitHandle": {
             "Type": "AWS::CloudFormation::WaitConditionHandle"
         },
-        "OtherSledsWaitCondition": {
+        "StackFinishedWaitCondition": {
             "Type": "AWS::CloudFormation::WaitCondition",
-            "DependsOn": [ "Sled2", "Sled3", "Sled4", "Sled5", "Sled6", "Sled7", "Sled8"],
+            "DependsOn": "Infra1",
             "Properties": {
                 "Handle": {
-                    "Ref": "OtherSledsWaitHandle"
+                    "Ref": "StackFinishedWaitHandle"
                 },
                 "Count": "7",
                 "Timeout": "3600"
@@ -317,7 +317,9 @@
                     { "IpProtocol" : "tcp",  "FromPort" : "55672",  "ToPort" : "55672",  "CidrIp" : "0.0.0.0/0"} ,
                     { "IpProtocol" : "tcp",  "FromPort" : "16672",  "ToPort" : "16672",  "CidrIp" : "0.0.0.0/0"} ,
                     { "IpProtocol" : "tcp",  "FromPort" : "3030",  "ToPort" : "3030",  "CidrIp" : "0.0.0.0/0"} ,
-                    { "IpProtocol" : "udp",  "FromPort" : "3030",  "ToPort" : "3030",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "tcp",  "FromPort" : "3030",  "ToPort" : "3030",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "udp",  "FromPort" : "7946",  "ToPort" : "7946",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "tcp",  "FromPort" : "7946",  "ToPort" : "7946",  "CidrIp" : "0.0.0.0/0"} ,
                     { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "CidrIp" : "0.0.0.0/0"} 
                 ]
             }
@@ -339,7 +341,9 @@
                     { "IpProtocol" : "tcp",  "FromPort" : "55672", "ToPort" : "55672", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
                     { "IpProtocol" : "tcp",  "FromPort" : "16672", "ToPort" : "16672", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
                     { "IpProtocol" : "tcp",  "FromPort" : "3030", "ToPort" : "3030", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
-                    { "IpProtocol" : "udp",  "FromPort" : "3030", "ToPort" : "3030", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
+                    { "IpProtocol" : "tcp",  "FromPort" : "3030", "ToPort" : "3030", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
+                    { "IpProtocol" : "udp",  "FromPort" : "7946", "ToPort" : "7946", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } ,
+                    { "IpProtocol" : "tcp",  "FromPort" : "7946", "ToPort" : "7946", "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } } , 
                     { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "SourceSecurityGroupId" : { "Ref" : "Infra1SecurityGroup" } }
                 ]
             }
@@ -399,21 +403,13 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::aws-sled1]\"\n    ]\n",
-                                            "}"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled1]\" ] }"
                                         ]
                                     ]
                                 },
                                 "mode": "000644",
                                 "owner": "root",
                                 "group": "root"
-                            },
-                            "/etc/chef/ohai/hints/ec2.json" : {
-                                "content" : "{}",
-                                "mode"   : "000644",
-                                "owner"  : "root",
-                                "group"  : "root"
                             }
                         }
                     }
@@ -441,28 +437,18 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "Infra1WaitHandle" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n", 
                                 "sudo apt-get update\n", 
-                                "sudo apt-get upgrade -y --force-yes\n",
-                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n", 
-                                "sudo apt-get -y --force-yes install build-essential\n",
-                                "sudo apt-get -y --force-yes install curl\n",
-                                "sudo gem1.8 list | cut -d\" \" -f1 | xargs sudo gem1.8 uninstall -aIx\n",
-                                "sudo apt-get -y --force-yes remove libruby1.8 ruby1.8 ruby1.8-dev rubygems1.8\n",
-                                "sudo apt-get -y --force-yes install ruby1.9.1 ruby1.9.1-dev\n",
-                                "sudo update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby1.9.1 400 --slave /usr/share/man/man1/ruby.1.gz ruby.1.gz /usr/share/man/man1/ruby1.9.1.1.gz --slave   /usr/bin/ri ri /usr/bin/ri1.9.1 --slave /usr/bin/irb irb /usr/bin/irb1.9.1 --slave /usr/bin/rdoc rdoc /usr/bin/rdoc1.9.1\n",
-                                "sudo update-alternatives --set ruby /usr/bin/ruby1.9.1\n",
-                                "sudo update-alternatives --set gem /usr/bin/gem1.9.1\n",
                                 "sudo apt-get -y --force-yes install s3cmd\n",
                                 "sudo apt-get -y --force-yes install ssl-cert\n",
                                 "sudo apt-get -y --force-yes install wget\n",
-                                "sudo gem install rubygems-update\n",
-                                "sudo update_rubygems\n",
-                                "# route the second private ip correctly\n",
+                                "sudo apt-get -y --force-yes install unzip\n",
                                 "sudo echo -e \"\n    address 172.16.31.5\n    netmask 255.255.255.0\n    gateway 172.16.31.1\n    up ip addr add 172.16.31.6/24 dev eth0\" >> /etc/network/interfaces.d/eth0.cfg\n",
+                                "sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE\n",
+                                "sudo sysctl -w net.ipv4.ip_forward=1\n",
                                 "sudo /etc/init.d/networking restart\n",
                                 "curl -L https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.10.4\n",
                                 "sudo apt-get -y --force-yes install python-setuptools\n",
@@ -474,15 +460,25 @@
                                 "         --secret-key ", { "Fn::GetAtt": ["HostKeys", "SecretAccessKey"] }, 
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/validation.pem /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef Server validation key'\n",
-                                "sudo ruby /etc/chef/chef_init.rb", " -b ", { "Ref": "S3ChefBucket" }, " -c \"https://private-chef.mtnsatcloud.com\" -d ", { "Ref": "DomainName" }, " -e ", { "Ref": "ChefEnvironment" }, " -o ", { "Ref": "ChefOrganization" }, " -r ", { "Ref": "ChefClientRetries" }, " -s ", { "Ref": "ShipName" }, " -v ", { "Ref": "Validator" }, " -u -l infra1 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n",
-                                "sleep 240\n", 
+                                "sudo mkdir /var/log/ship_in_a_bottle\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/validation.pem /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef Server validation key'\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/ec2.json /etc/chef/ohai/hints/ec2.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get ohai hint'\n",
+                                "sudo chmod 644 /etc/chef/ohai/hints/ec2.json\n",
+                                "sudo wget https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip || error_exit 'Serf setup (download) failed.'\n",
+                                "sudo unzip 0.6.0_linux_amd64.zip || error_exit 'Serf setup (unzip) failed.'\n",
+                                "sudo mv serf /usr/bin || error_exit 'Serf setup (move) failed.'\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf_infra1.json /etc/serf/serf.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf json'\n",
+                                "sudo chmod 644 /etc/serf/serf.json\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf.conf /etc/init/serf.conf >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf startup script'\n",
+                                "sudo initctl reload-configuration; sudo start serf || error_exit 'Serf start failed.'\n",
+                                "cfn-signal -e 0 -r 'Serf setup finished' '", { "Ref": "SerfSetupWaitHandle" }, "'\n",
+                                "sudo /opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb", " -b ", { "Ref": "S3ChefBucket" }, " -c \"https://private-chef.mtnsatcloud.com\" -d ", { "Ref": "DomainName" }, " -e ", { "Ref": "ChefEnvironment" }, " -o ", { "Ref": "ChefOrganization" }, " -r ", { "Ref": "ChefClientRetries" }, " -s ", { "Ref": "ShipName" }, " -v ", { "Ref": "Validator" }, " -u -l infra1 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n",
+                                "sleep 60\n", 
                                 "JOBURL=http://jenkins-ci.mtnsatcloud.com/job/promote-to-ship\n",
                                 "JSONURL=${JOBURL}/lastBuild/api/json\n",
                                 "curl --data \"SHIPNAME=", { "Ref": "ShipName" }, "&PROMOTEFROM=", { "Ref": "ChefEnvironment" }, "\" ${JOBURL}/buildWithParameters || error_exit 'Failed to run start promote job.'\n",
                                 "sleep 10\n",
-                                "# Loop until the build result is no longer null\n",
                                 "GREP_RETURN_CODE=0\n",
                                 "while [ $GREP_RETURN_CODE -eq 0 ]\n",
                                 "do\n",
@@ -491,9 +487,7 @@
                                 "    GREP_RETURN_CODE=$?\n",
                                 "done\n",
                                 "curl ${JSONURL} | grep \\\"result\\\":\\\"SUCCESS\\\" || error_exit 'Promote job failed.'\n",
-                                "sleep 240\n",
-                                "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "Infra1WaitHandle" }, 
-                                "'\n"
+                                "serf event chef_on_ship"
                             ]
                         ]
                     }
@@ -510,7 +504,7 @@
         },
         "Sled2" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "Infra1WaitCondition",
+            "DependsOn" : "SerfSetupWaitCondition",
             "Metadata" : { 
                 "AWS::CloudFormation::Init": {
                     "config": {
@@ -534,9 +528,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::sled2]\"\n    ]\n",
-                                            "}"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled2]\" ] }"
                                         ]
                                     ]
                                 },
@@ -544,11 +536,20 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/chef/ohai/hints/ec2.json" : {
-                                "content" : "{}",
-                                "mode"   : "000644",
-                                "owner"  : "root",
-                                "group"  : "root"
+                            "/etc/chef/chef_on_ship_handler.sh": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "#!/bin/bash -v\n",
+                                            "s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to download peasplitter validator.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n",
+                                            "/opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled2 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to run chef_init script.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n", 
+                                            "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "StackFinishedWaitHandle" }, "'"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000755",
+                                "owner": "root",
+                                "group": "root"
                             }
                         }
                     }
@@ -563,26 +564,14 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n",  
-                                "sudo apt-get update\n", 
-                                "sudo apt-get upgrade -y --force-yes\n",
-                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n", 
-                                "sudo apt-get -y --force-yes install build-essential\n",
-                                "sudo apt-get -y --force-yes install curl\n",
-                                "sudo gem1.8 list | cut -d\" \" -f1 | xargs sudo gem1.8 uninstall -aIx\n",
-                                "sudo apt-get -y --force-yes remove libruby1.8 ruby1.8 ruby1.8-dev rubygems1.8\n",
-                                "sudo apt-get -y --force-yes install ruby1.9.1 ruby1.9.1-dev\n",
-                                "sudo update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby1.9.1 400 --slave /usr/share/man/man1/ruby.1.gz ruby.1.gz /usr/share/man/man1/ruby1.9.1.1.gz --slave   /usr/bin/ri ri /usr/bin/ri1.9.1 --slave /usr/bin/irb irb /usr/bin/irb1.9.1 --slave /usr/bin/rdoc rdoc /usr/bin/rdoc1.9.1\n",
-                                "sudo update-alternatives --set ruby /usr/bin/ruby1.9.1\n",
-                                "sudo update-alternatives --set gem /usr/bin/gem1.9.1\n",
+                                "sudo apt-get update\n",
                                 "sudo apt-get -y --force-yes install s3cmd\n",
                                 "sudo apt-get -y --force-yes install ssl-cert\n",
-                                "sudo apt-get -y --force-yes install wget\n",
-                                "sudo gem install rubygems-update\n",
-                                "sudo update_rubygems\n",
+                                "sudo apt-get -y --force-yes install unzip\n",
                                 "curl -L https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.10.4\n",
                                 "sudo apt-get -y --force-yes install python-setuptools\n",
                                 "sudo easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.0-6.tar.gz\n", 
@@ -593,12 +582,17 @@
                                 "         --secret-key ", { "Fn::GetAtt": ["HostKeys", "SecretAccessKey"] }, 
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
-                                "# Fixup the server URL in client.rb\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled2 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
-                                "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
-                                "'\n"
+                                "sudo mkdir /var/log/ship_in_a_bottle\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/ec2.json /etc/chef/ohai/hints/ec2.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get ohai hint'\n",
+                                "sudo chmod 644 /etc/chef/ohai/hints/ec2.json\n",
+                                "sudo wget https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip || error_exit 'Serf setup (download) failed.'\n",
+                                "sudo unzip 0.6.0_linux_amd64.zip || error_exit 'Serf setup (unzip) failed.'\n",
+                                "sudo mv serf /usr/bin || error_exit 'Serf setup (move) failed.'\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf_sled2.json /etc/serf/serf.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf json'\n",
+                                "sudo chmod 644 /etc/serf/serf.json\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf.conf /etc/init/serf.conf >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf startup script'\n",
+                                "sudo initctl reload-configuration; sudo start serf || error_exit 'Serf start failed.'\n"                                
                             ]
                         ]
                     }
@@ -631,7 +625,7 @@
         },
         "Sled3" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "Infra1WaitCondition",
+            "DependsOn" : "SerfSetupWaitCondition",
             "Metadata" : { 
                 "AWS::CloudFormation::Init": {
                     "config": {
@@ -655,9 +649,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::base]\"\n    ]\n",
-                                            "}"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::base]\" ] }"
                                         ]
                                     ]
                                 },
@@ -665,11 +657,20 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/chef/ohai/hints/ec2.json" : {
-                                "content" : "{}",
-                                "mode"   : "000644",
-                                "owner"  : "root",
-                                "group"  : "root"
+                            "/etc/chef/chef_on_ship_handler.sh": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "#!/bin/bash -v\n",
+                                            "s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to download peasplitter validator.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n",
+                                            "/opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled3 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to run chef_init script.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n", 
+                                            "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "StackFinishedWaitHandle" }, "'"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000755",
+                                "owner": "root",
+                                "group": "root"
                             }
                         }
                     }
@@ -684,22 +685,14 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
-                                "}\n",  
-                                "sudo apt-get update\n", 
-                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n", 
-                                "sudo apt-get -y --force-yes install build-essential\n",
-                                "sudo gem1.8 list | cut -d\" \" -f1 | xargs sudo gem1.8 uninstall -aIx\n",
-                                "sudo apt-get -y --force-yes remove libruby1.8 ruby1.8 ruby1.8-dev rubygems1.8\n",
-                                "sudo apt-get -y --force-yes install ruby1.9.1 ruby1.9.1-dev\n",
-                                "sudo update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby1.9.1 400 --slave /usr/share/man/man1/ruby.1.gz ruby.1.gz /usr/share/man/man1/ruby1.9.1.1.gz --slave   /usr/bin/ri ri /usr/bin/ri1.9.1 --slave /usr/bin/irb irb /usr/bin/irb1.9.1 --slave /usr/bin/rdoc rdoc /usr/bin/rdoc1.9.1\n",
-                                "sudo update-alternatives --set ruby /usr/bin/ruby1.9.1\n",
-                                "sudo update-alternatives --set gem /usr/bin/gem1.9.1\n",
+                                "}\n",
+                                "sudo apt-get update\n",
                                 "sudo apt-get -y --force-yes install s3cmd\n",
-                                "sudo gem install rubygems-update\n",
-                                "sudo update_rubygems\n",
+                                "sudo apt-get -y --force-yes install ssl-cert\n",
+                                "sudo apt-get -y --force-yes install unzip\n",
                                 "curl -L https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.10.4\n",
                                 "sudo apt-get -y --force-yes install python-setuptools\n",
                                 "sudo easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.0-6.tar.gz\n", 
@@ -710,12 +703,18 @@
                                 "         --secret-key ", { "Fn::GetAtt": ["HostKeys", "SecretAccessKey"] }, 
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n", 
-                                "sudo s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
-                                "# Fixup the server URL in client.rb\n", 
-                                "sudo s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -a \"stackato\" -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled3 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
-                                "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
-                                "'\n"
+                                "sudo mkdir /var/log/ship_in_a_bottle\n",
+                                "sudo s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
+                                "sudo s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/ec2.json /etc/chef/ohai/hints/ec2.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get ohai hint'\n",
+                                "sudo chmod 644 /etc/chef/ohai/hints/ec2.json\n",
+                                "sudo wget https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip || error_exit 'Serf setup (download) failed.'\n",
+                                "sudo unzip 0.6.0_linux_amd64.zip || error_exit 'Serf setup (unzip) failed.'\n",
+                                "sudo mv serf /usr/bin || error_exit 'Serf setup (move) failed.'\n",
+                                "sudo s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf_sled3.json /etc/serf/serf.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf json'\n",
+                                "sudo chmod 644 /etc/serf/serf.json\n",
+                                "sudo s3cmd -c /home/stackato/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf.conf /etc/init/serf.conf >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf startup script'\n",
+                                "sudo initctl reload-configuration; sudo start serf || error_exit 'Serf start failed.'\n"
+                                
                             ]
                         ]
                     }
@@ -748,7 +747,7 @@
         },
         "Sled4" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "Infra1WaitCondition",
+            "DependsOn" : "SerfSetupWaitCondition",
             "Metadata" : { 
                 "AWS::CloudFormation::Init": {
                     "config": {
@@ -772,9 +771,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::sled4]\"\n    ]\n",
-                                            "}"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled4]\" ] }"
                                         ]
                                     ]
                                 },
@@ -782,11 +779,20 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/chef/ohai/hints/ec2.json" : {
-                                "content" : "{}",
-                                "mode"   : "000644",
-                                "owner"  : "root",
-                                "group"  : "root"
+                            "/etc/chef/chef_on_ship_handler.sh": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "#!/bin/bash -v\n",
+                                            "s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to download peasplitter validator.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n",
+                                            "/opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled4 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to run chef_init script.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n", 
+                                            "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "StackFinishedWaitHandle" }, "'"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000755",
+                                "owner": "root",
+                                "group": "root"
                             }
                         }
                     }
@@ -801,26 +807,14 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
-                                "}\n",   
-                                "sudo apt-get update\n", 
-                                "sudo apt-get upgrade -y --force-yes\n",
-                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n", 
-                                "sudo apt-get -y --force-yes install build-essential\n",
-                                "sudo apt-get -y --force-yes install curl\n",
-                                "sudo gem1.8 list | cut -d\" \" -f1 | xargs sudo gem1.8 uninstall -aIx\n",
-                                "sudo apt-get -y --force-yes remove libruby1.8 ruby1.8 ruby1.8-dev rubygems1.8\n",
-                                "sudo apt-get -y --force-yes install ruby1.9.1 ruby1.9.1-dev\n",
-                                "sudo update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby1.9.1 400 --slave /usr/share/man/man1/ruby.1.gz ruby.1.gz /usr/share/man/man1/ruby1.9.1.1.gz --slave   /usr/bin/ri ri /usr/bin/ri1.9.1 --slave /usr/bin/irb irb /usr/bin/irb1.9.1 --slave /usr/bin/rdoc rdoc /usr/bin/rdoc1.9.1\n",
-                                "sudo update-alternatives --set ruby /usr/bin/ruby1.9.1\n",
-                                "sudo update-alternatives --set gem /usr/bin/gem1.9.1\n",
+                                "}\n",
+                                "sudo apt-get update\n",
                                 "sudo apt-get -y --force-yes install s3cmd\n",
                                 "sudo apt-get -y --force-yes install ssl-cert\n",
-                                "sudo apt-get -y --force-yes install wget\n",
-                                "sudo gem install rubygems-update\n",
-                                "sudo update_rubygems\n",
+                                "sudo apt-get -y --force-yes install unzip\n",
                                 "curl -L https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.10.4\n",
                                 "sudo apt-get -y --force-yes install python-setuptools\n",
                                 "sudo easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.0-6.tar.gz\n", 
@@ -831,12 +825,18 @@
                                 "         --secret-key ", { "Fn::GetAtt": ["HostKeys", "SecretAccessKey"] }, 
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
-                                "# Fixup the server URL in client.rb\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled4 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
-                                "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
-                                "'\n"
+                                "sudo mkdir /var/log/ship_in_a_bottle\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/ec2.json /etc/chef/ohai/hints/ec2.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get ohai hint'\n",
+                                "sudo chmod 644 /etc/chef/ohai/hints/ec2.json\n",
+                                "sudo wget https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip || error_exit 'Serf setup (download) failed.'\n",
+                                "sudo unzip 0.6.0_linux_amd64.zip || error_exit 'Serf setup (unzip) failed.'\n",
+                                "sudo mv serf /usr/bin || error_exit 'Serf setup (move) failed.'\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf_sled4.json /etc/serf/serf.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf json'\n",
+                                "sudo chmod 644 /etc/serf/serf.json\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf.conf /etc/init/serf.conf >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf startup script'\n",
+                                "sudo initctl reload-configuration; sudo start serf || error_exit 'Serf start failed.'\n"
+                                
                             ]
                         ]
                     }
@@ -869,7 +869,7 @@
         },
         "Sled5" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "Infra1WaitCondition",
+            "DependsOn" : "SerfSetupWaitCondition",
             "Metadata" : { 
                 "AWS::CloudFormation::Init": {
                     "config": {
@@ -893,9 +893,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::sled5]\"\n    ]\n",
-                                            "}"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled5]\" ] }"
                                         ]
                                     ]
                                 },
@@ -903,11 +901,20 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/chef/ohai/hints/ec2.json" : {
-                                "content" : "{}",
-                                "mode"   : "000644",
-                                "owner"  : "root",
-                                "group"  : "root"
+                            "/etc/chef/chef_on_ship_handler.sh": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "#!/bin/bash -v\n",
+                                            "s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to download peasplitter validator.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n",
+                                            "/opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled5 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to run chef_init script.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n", 
+                                            "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "StackFinishedWaitHandle" }, "'"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000755",
+                                "owner": "root",
+                                "group": "root"
                             }
                         }
                     }
@@ -922,26 +929,14 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
-                                "}\n",   
-                                "sudo apt-get update\n", 
-                                "sudo apt-get upgrade -y --force-yes\n",
-                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n", 
-                                "sudo apt-get -y --force-yes install build-essential\n",
-                                "sudo apt-get -y --force-yes install curl\n",
-                                "sudo gem1.8 list | cut -d\" \" -f1 | xargs sudo gem1.8 uninstall -aIx\n",
-                                "sudo apt-get -y --force-yes remove libruby1.8 ruby1.8 ruby1.8-dev rubygems1.8\n",
-                                "sudo apt-get -y --force-yes install ruby1.9.1 ruby1.9.1-dev\n",
-                                "sudo update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby1.9.1 400 --slave /usr/share/man/man1/ruby.1.gz ruby.1.gz /usr/share/man/man1/ruby1.9.1.1.gz --slave   /usr/bin/ri ri /usr/bin/ri1.9.1 --slave /usr/bin/irb irb /usr/bin/irb1.9.1 --slave /usr/bin/rdoc rdoc /usr/bin/rdoc1.9.1\n",
-                                "sudo update-alternatives --set ruby /usr/bin/ruby1.9.1\n",
-                                "sudo update-alternatives --set gem /usr/bin/gem1.9.1\n",
+                                "}\n", 
+                                "sudo apt-get update\n",
                                 "sudo apt-get -y --force-yes install s3cmd\n",
                                 "sudo apt-get -y --force-yes install ssl-cert\n",
-                                "sudo apt-get -y --force-yes install wget\n",
-                                "sudo gem install rubygems-update\n",
-                                "sudo update_rubygems\n",
+                                "sudo apt-get -y --force-yes install unzip\n",
                                 "curl -L https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.10.4\n",
                                 "sudo apt-get -y --force-yes install python-setuptools\n",
                                 "sudo easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.0-6.tar.gz\n", 
@@ -952,12 +947,18 @@
                                 "         --secret-key ", { "Fn::GetAtt": ["HostKeys", "SecretAccessKey"] }, 
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
-                                "# Fixup the server URL in client.rb\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled5 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
-                                "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
-                                "'\n"
+                                "sudo mkdir /var/log/ship_in_a_bottle\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/ec2.json /etc/chef/ohai/hints/ec2.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get ohai hint'\n",
+                                "sudo chmod 644 /etc/chef/ohai/hints/ec2.json\n",
+                                "sudo wget https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip || error_exit 'Serf setup (download) failed.'\n",
+                                "sudo unzip 0.6.0_linux_amd64.zip || error_exit 'Serf setup (unzip) failed.'\n",
+                                "sudo mv serf /usr/bin || error_exit 'Serf setup (move) failed.'\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf_sled5.json /etc/serf/serf.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf json'\n",
+                                "sudo chmod 644 /etc/serf/serf.json\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf.conf /etc/init/serf.conf >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf startup script'\n",
+                                "sudo initctl reload-configuration; sudo start serf || error_exit 'Serf start failed.'\n"
+                                
                             ]
                         ]
                     }
@@ -990,7 +991,7 @@
         },
         "Sled6" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "Infra1WaitCondition",
+            "DependsOn" : "SerfSetupWaitCondition",
             "Metadata" : { 
                 "AWS::CloudFormation::Init": {
                     "config": {
@@ -1014,9 +1015,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::sled6]\"\n    ]\n",
-                                            "}"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled6]\" ] }"
                                         ]
                                     ]
                                 },
@@ -1024,11 +1023,20 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/chef/ohai/hints/ec2.json" : {
-                                "content" : "{}",
-                                "mode"   : "000644",
-                                "owner"  : "root",
-                                "group"  : "root"
+                            "/etc/chef/chef_on_ship_handler.sh": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "#!/bin/bash -v\n",
+                                            "s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to download peasplitter validator.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n",
+                                            "/opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled6 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to run chef_init script.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n", 
+                                            "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "StackFinishedWaitHandle" }, "'"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000755",
+                                "owner": "root",
+                                "group": "root"
                             }
                         }
                     }
@@ -1043,26 +1051,14 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
-                                "}\n",   
-                                "sudo apt-get update\n", 
-                                "sudo apt-get upgrade -y --force-yes\n",
-                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n", 
-                                "sudo apt-get -y --force-yes install build-essential\n",
-                                "sudo apt-get -y --force-yes install curl\n",
-                                "sudo gem1.8 list | cut -d\" \" -f1 | xargs sudo gem1.8 uninstall -aIx\n",
-                                "sudo apt-get -y --force-yes remove libruby1.8 ruby1.8 ruby1.8-dev rubygems1.8\n",
-                                "sudo apt-get -y --force-yes install ruby1.9.1 ruby1.9.1-dev\n",
-                                "sudo update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby1.9.1 400 --slave /usr/share/man/man1/ruby.1.gz ruby.1.gz /usr/share/man/man1/ruby1.9.1.1.gz --slave   /usr/bin/ri ri /usr/bin/ri1.9.1 --slave /usr/bin/irb irb /usr/bin/irb1.9.1 --slave /usr/bin/rdoc rdoc /usr/bin/rdoc1.9.1\n",
-                                "sudo update-alternatives --set ruby /usr/bin/ruby1.9.1\n",
-                                "sudo update-alternatives --set gem /usr/bin/gem1.9.1\n",
+                                "}\n", 
+                                "sudo apt-get update\n",
                                 "sudo apt-get -y --force-yes install s3cmd\n",
                                 "sudo apt-get -y --force-yes install ssl-cert\n",
-                                "sudo apt-get -y --force-yes install wget\n",
-                                "sudo gem install rubygems-update\n",
-                                "sudo update_rubygems\n",
+                                "sudo apt-get -y --force-yes install unzip\n",
                                 "curl -L https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.10.4\n",
                                 "sudo apt-get -y --force-yes install python-setuptools\n",
                                 "sudo easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.0-6.tar.gz\n", 
@@ -1073,12 +1069,18 @@
                                 "         --secret-key ", { "Fn::GetAtt": ["HostKeys", "SecretAccessKey"] }, 
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n",
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
-                                "# Fixup the server URL in client.rb\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled6 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
-                                "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
-                                "'\n"
+                                "sudo mkdir /var/log/ship_in_a_bottle\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/ec2.json /etc/chef/ohai/hints/ec2.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get ohai hint'\n",
+                                "sudo chmod 644 /etc/chef/ohai/hints/ec2.json\n",
+                                "sudo wget https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip || error_exit 'Serf setup (download) failed.'\n",
+                                "sudo unzip 0.6.0_linux_amd64.zip || error_exit 'Serf setup (unzip) failed.'\n",
+                                "sudo mv serf /usr/bin || error_exit 'Serf setup (move) failed.'\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf_sled6.json /etc/serf/serf.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf json'\n",
+                                "sudo chmod 644 /etc/serf/serf.json\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf.conf /etc/init/serf.conf >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf startup script'\n",
+                                "sudo initctl reload-configuration; sudo start serf || error_exit 'Serf start failed.'\n"
+                                
                             ]
                         ]
                     }
@@ -1111,7 +1113,7 @@
         },
         "Sled7" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "Infra1WaitCondition",
+            "DependsOn" : "SerfSetupWaitCondition",
             "Metadata" : { 
                 "AWS::CloudFormation::Init": {
                     "config": {
@@ -1135,9 +1137,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::sled7]\"\n    ]\n",
-                                            "}"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled7]\" ] }"
                                         ]
                                     ]
                                 },
@@ -1145,11 +1145,20 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/chef/ohai/hints/ec2.json" : {
-                                "content" : "{}",
-                                "mode"   : "000644",
-                                "owner"  : "root",
-                                "group"  : "root"
+                            "/etc/chef/chef_on_ship_handler.sh": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "#!/bin/bash -v\n",
+                                            "s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to download peasplitter validator.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n",
+                                            "/opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled7 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to run chef_init script.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n", 
+                                            "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "StackFinishedWaitHandle" }, "'"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000755",
+                                "owner": "root",
+                                "group": "root"
                             }
                         }
                     }
@@ -1164,26 +1173,14 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
-                                "}\n",  
-                                "sudo apt-get update\n", 
-                                "sudo apt-get upgrade -y --force-yes\n",
-                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n", 
-                                "sudo apt-get -y --force-yes install build-essential\n",
-                                "sudo apt-get -y --force-yes install curl\n",
-                                "sudo gem1.8 list | cut -d\" \" -f1 | xargs sudo gem1.8 uninstall -aIx\n",
-                                "sudo apt-get -y --force-yes remove libruby1.8 ruby1.8 ruby1.8-dev rubygems1.8\n",
-                                "sudo apt-get -y --force-yes install ruby1.9.1 ruby1.9.1-dev\n",
-                                "sudo update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby1.9.1 400 --slave /usr/share/man/man1/ruby.1.gz ruby.1.gz /usr/share/man/man1/ruby1.9.1.1.gz --slave   /usr/bin/ri ri /usr/bin/ri1.9.1 --slave /usr/bin/irb irb /usr/bin/irb1.9.1 --slave /usr/bin/rdoc rdoc /usr/bin/rdoc1.9.1\n",
-                                "sudo update-alternatives --set ruby /usr/bin/ruby1.9.1\n",
-                                "sudo update-alternatives --set gem /usr/bin/gem1.9.1\n",
+                                "}\n", 
+                                "sudo apt-get update\n",
                                 "sudo apt-get -y --force-yes install s3cmd\n",
                                 "sudo apt-get -y --force-yes install ssl-cert\n",
-                                "sudo apt-get -y --force-yes install wget\n",
-                                "sudo gem install rubygems-update\n",
-                                "sudo update_rubygems\n",
+                                "sudo apt-get -y --force-yes install unzip\n",
                                 "curl -L https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.10.4\n",
                                 "sudo apt-get -y --force-yes install python-setuptools\n",
                                 "sudo easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.0-6.tar.gz\n", 
@@ -1194,12 +1191,18 @@
                                 "         --secret-key ", { "Fn::GetAtt": ["HostKeys", "SecretAccessKey"] }, 
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
-                                "# Fixup the server URL in client.rb\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled7 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
-                                "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
-                                "'\n"
+                                "sudo mkdir /var/log/ship_in_a_bottle\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/ec2.json /etc/chef/ohai/hints/ec2.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get ohai hint'\n",
+                                "sudo chmod 644 /etc/chef/ohai/hints/ec2.json\n",
+                                "sudo wget https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip || error_exit 'Serf setup (download) failed.'\n",
+                                "sudo unzip 0.6.0_linux_amd64.zip || error_exit 'Serf setup (unzip) failed.'\n",
+                                "sudo mv serf /usr/bin || error_exit 'Serf setup (move) failed.'\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf_sled7.json /etc/serf/serf.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf json'\n",
+                                "sudo chmod 644 /etc/serf/serf.json\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf.conf /etc/init/serf.conf >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf startup script'\n",
+                                "sudo initctl reload-configuration; sudo start serf || error_exit 'Serf start failed.'\n"
+                                
                             ]
                         ]
                     }
@@ -1232,7 +1235,7 @@
         },
         "Sled8" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "Infra1WaitCondition",
+            "DependsOn" : "SerfSetupWaitCondition",
             "Metadata" : { 
                 "AWS::CloudFormation::Init": {
                     "config": {
@@ -1256,9 +1259,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{\n",
-                                            "    \"run_list\": [\n        \"recipe[chef_handler::rabbit]\",\n        \"recipe[ship::", { "Ref": "ShipName" }, "]\",\n        \"recipe[mtn_roles::sled8]\"\n    ]\n",
-                                            "}"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled8]\" ] }"
                                         ]
                                     ]
                                 },
@@ -1266,11 +1267,20 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/chef/ohai/hints/ec2.json" : {
-                                "content" : "{}",
-                                "mode"   : "000644",
-                                "owner"  : "root",
-                                "group"  : "root"
+                            "/etc/chef/chef_on_ship_handler.sh": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "#!/bin/bash -v\n", 
+                                            "s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to download peasplitter validator.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n",
+                                            "/opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled8 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to run chef_init script.' '", { "Ref": "StackFinishedWaitHandle" }, "'\n", 
+                                            "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "StackFinishedWaitHandle" }, "'"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000755",
+                                "owner": "root",
+                                "group": "root"
                             }
                         }
                     }
@@ -1285,26 +1295,14 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "OtherSledsWaitHandle" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandle" }, 
                                 "'\n", 
                                 "  exit 1\n", 
-                                "}\n",  
-                                "sudo apt-get update\n", 
-                                "sudo apt-get upgrade -y --force-yes\n",
-                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n", 
-                                "sudo apt-get -y --force-yes install build-essential\n",
-                                "sudo apt-get -y --force-yes install curl\n",
-                                "sudo gem1.8 list | cut -d\" \" -f1 | xargs sudo gem1.8 uninstall -aIx\n",
-                                "sudo apt-get -y --force-yes remove libruby1.8 ruby1.8 ruby1.8-dev rubygems1.8\n",
-                                "sudo apt-get -y --force-yes install ruby1.9.1 ruby1.9.1-dev\n",
-                                "sudo update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby1.9.1 400 --slave /usr/share/man/man1/ruby.1.gz ruby.1.gz /usr/share/man/man1/ruby1.9.1.1.gz --slave   /usr/bin/ri ri /usr/bin/ri1.9.1 --slave /usr/bin/irb irb /usr/bin/irb1.9.1 --slave /usr/bin/rdoc rdoc /usr/bin/rdoc1.9.1\n",
-                                "sudo update-alternatives --set ruby /usr/bin/ruby1.9.1\n",
-                                "sudo update-alternatives --set gem /usr/bin/gem1.9.1\n",
+                                "}\n",
+                                "sudo apt-get update\n",
                                 "sudo apt-get -y --force-yes install s3cmd\n",
                                 "sudo apt-get -y --force-yes install ssl-cert\n",
-                                "sudo apt-get -y --force-yes install wget\n",
-                                "sudo gem install rubygems-update\n",
-                                "sudo update_rubygems\n",
+                                "sudo apt-get -y --force-yes install unzip\n",
                                 "curl -L https://www.opscode.com/chef/install.sh | sudo bash -s -- -v 11.10.4\n",
                                 "sudo apt-get -y --force-yes install python-setuptools\n",
                                 "sudo easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.0-6.tar.gz\n", 
@@ -1315,12 +1313,18 @@
                                 "         --secret-key ", { "Fn::GetAtt": ["HostKeys", "SecretAccessKey"] }, 
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
-                                "# Fixup the server URL in client.rb\n", 
-                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-infra1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to get ship Chef Server validation key'\n", 
-                                "sudo ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -r ", { "Ref": "ChefClientRetries" }, " -e shipcloud", " -o peasplitter -s ", { "Ref": "ShipName" }, " -l sled8 >> /tmp/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n", 
-                                "cfn-signal -e 0 -r 'Chef Client configuration' '", { "Ref": "OtherSledsWaitHandle" }, 
-                                "'\n"
+                                "sudo mkdir /var/log/ship_in_a_bottle\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/chef_init.rb /etc/chef/chef_init.rb >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get Chef initialization script.'\n", 
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/ec2.json /etc/chef/ohai/hints/ec2.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get ohai hint'\n",
+                                "sudo chmod 644 /etc/chef/ohai/hints/ec2.json\n",
+                                "sudo wget https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip || error_exit 'Serf setup (download) failed.'\n",
+                                "sudo unzip 0.6.0_linux_amd64.zip || error_exit 'Serf setup (unzip) failed.'\n",
+                                "sudo mv serf /usr/bin || error_exit 'Serf setup (move) failed.'\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf_sled8.json /etc/serf/serf.json >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf json'\n",
+                                "sudo chmod 644 /etc/serf/serf.json\n",
+                                "sudo s3cmd -c /home/ubuntu/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/serf.conf /etc/init/serf.conf >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to get serf startup script'\n",
+                                "sudo initctl reload-configuration; sudo start serf || error_exit 'Serf start failed.'\n"
+                                
                             ]
                         ]
                     }
@@ -1356,34 +1360,6 @@
         "InfraDNS" : {
             "Description" : "Public DNS name of the infra1 sled",
             "Value" : { "Fn::GetAtt" : ["Infra1", "PublicDnsName"] }
-        },
-        "Sled2Ip" : {
-            "Description" : "Private ip of sled2",
-            "Value" : { "Fn::GetAtt" : ["Sled2", "PrivateIp"] }
-        },
-        "Sled3Ip" : {
-            "Description" : "Private ip of sled3",
-            "Value" : { "Fn::GetAtt" : ["Sled3", "PrivateIp"] }
-        },
-        "Sled4Ip" : {
-            "Description" : "Private ip of sled4",
-            "Value" : { "Fn::GetAtt" : ["Sled4", "PrivateIp"] }
-        },
-        "Sled5Ip" : {
-            "Description" : "Private ip of sled5",
-            "Value" : { "Fn::GetAtt" : ["Sled5", "PrivateIp"] }
-        },
-        "Sled6Ip" : {
-            "Description" : "Private ip of sled6",
-            "Value" : { "Fn::GetAtt" : ["Sled6", "PrivateIp"] }
-        },
-        "Sled7Ip" : {
-            "Description" : "Private ip of sled7",
-            "Value" : { "Fn::GetAtt" : ["Sled7", "PrivateIp"] }
-        },
-        "Sled8Ip" : {
-            "Description" : "Private ip of sled8",
-            "Value" : { "Fn::GetAtt" : ["Sled8", "PrivateIp"] }
         }
     }
 }

@@ -45,7 +45,17 @@
                             "public": false,
                             "files": [ 
                                 "chef_init.rb",
-                                "validation.pem"
+                                "validation.pem",
+                                "serf.conf",
+                                "ec2.json",
+                                "serf_infra1.json",
+                                "serf_sled2.json",
+                                "serf_sled3.json",
+                                "serf_sled4.json",
+                                "serf_sled5.json",
+                                "serf_sled6.json",
+                                "serf_sled7.json",
+                                "serf_sled8.json"
                             ]
                         }
                     }
@@ -65,6 +75,46 @@
             {
                 "from": "template.json",
                 "to": "template.json"
+            },
+            {
+                "from": "serf.conf",
+                "to": "serf.conf"
+            },
+            {
+                "from": "ec2.json",
+                "to": "ec2.json"
+            },
+            {
+                "from": "serf_infra1.json",
+                "to": "serf_infra1.json"
+            },
+            {
+                "from": "serf_sled2.json",
+                "to": "serf_sled2.json"
+            },
+            {
+                "from": "serf_sled3.json",
+                "to": "serf_sled3.json"
+            },
+            {
+                "from": "serf_sled4.json",
+                "to": "serf_sled4.json"
+            },
+            {
+                "from": "serf_sled5.json",
+                "to": "serf_sled5.json"
+            },
+            {
+                "from": "serf_sled6.json",
+                "to": "serf_sled6.json"
+            },
+            {
+                "from": "serf_sled7.json",
+                "to": "serf_sled7.json"
+            },
+            {
+                "from": "serf_sled8.json",
+                "to": "serf_sled8.json"
             }
         ]
     }
