@@ -7,7 +7,7 @@
                 {
                     "access_key_id": "<%= aws_key_id %>",
                     "secret_access_key": "<%= aws_secret %>",
-                    "template_file": "template.json",
+                    "template_file": "main_template.json",
                     "template_parameters": {
                         "InstanceType": "m1.large",
                         "KeyName": "<%= aws_keypair %>",
@@ -46,16 +46,10 @@
                             "files": [ 
                                 "chef_init.rb",
                                 "validation.pem",
-                                "serf.conf",
-                                "ec2.json",
-                                "serf_infra1.json",
-                                "serf_sled2.json",
-                                "serf_sled3.json",
-                                "serf_sled4.json",
-                                "serf_sled5.json",
-                                "serf_sled6.json",
-                                "serf_sled7.json",
-                                "serf_sled8.json"
+                                "iam_template.json",
+                                "networking_template.json",
+                                "othersled_template.json",
+                                "sled1_template.json"
                             ]
                         }
                     }
@@ -73,49 +67,25 @@
                 "to": "validation.pem"
             },
             {
-                "from": "template.json",
-                "to": "template.json"
+                "from": "iam_template.json",
+                "to": "iam_template.json"
             },
             {
-                "from": "serf.conf",
-                "to": "serf.conf"
+                "from": "networking_template.json",
+                "to": "networking_template.json"
             },
             {
-                "from": "ec2.json",
-                "to": "ec2.json"
+                "from": "othersled_template.json",
+                "to": "othersled_template.json"
             },
             {
-                "from": "serf_infra1.json",
-                "to": "serf_infra1.json"
+                "from": "sled1_template.json",
+                "to": "sled1_template.json"
             },
             {
-                "from": "serf_sled2.json",
-                "to": "serf_sled2.json"
-            },
-            {
-                "from": "serf_sled3.json",
-                "to": "serf_sled3.json"
-            },
-            {
-                "from": "serf_sled4.json",
-                "to": "serf_sled4.json"
-            },
-            {
-                "from": "serf_sled5.json",
-                "to": "serf_sled5.json"
-            },
-            {
-                "from": "serf_sled6.json",
-                "to": "serf_sled6.json"
-            },
-            {
-                "from": "serf_sled7.json",
-                "to": "serf_sled7.json"
-            },
-            {
-                "from": "serf_sled8.json",
-                "to": "serf_sled8.json"
-            }
+                "from": "main_template.json",
+                "to": "main_template.json"
+            }     
         ]
     }
 }

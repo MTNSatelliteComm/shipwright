@@ -1,0 +1,322 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Ship-in-a-bottle: an AWS model of a Nexus Ship Cloud",
+    "Parameters": {
+        "KeyName": {
+            "Type": "String",
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the web server"
+        },
+        "InstanceType": {
+            "Description": "Application Server EC2 instance type",
+            "Type": "String",
+            "AllowedValues": ["m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge"],
+            "ConstraintDescription": "must be a valid EC2 instance type."
+        },
+        "ShipName": {
+            "Description": "Test ship name",
+            "Type": "String",
+            "ConstraintDescription": "Must be a valid ship name from AWS fleet."
+        },
+        "ChefOrganization": {
+            "Description": "The Organization name used in Hosted Chef.",
+            "Type": "String",
+            "Default": "mtn-pipelines"
+        },
+        "ChefClientRetries": {
+            "Description": "How many times to retry chef client run before giving up.",
+            "Type": "Number",
+            "Default": "3",
+            "MinValue" : "1"
+        },
+        "Validator": {
+            "Description": "validation client name.",
+            "Type": "String",
+            "Default": "mtn-pipelines-validator"
+        },
+        "ChefEnvironment": {
+            "Description": "The Chef Environment.",
+            "Type": "String",
+            "Default": "prod"
+        },
+        "DomainName": {
+            "Description": "Server Domain Name.",
+            "Type": "String",
+            "Default": "mtnsatcloud.com"
+        },
+        "S3ChefBucket": {
+            "Description": "S3 bucket containing validation private key for Chef Server",
+            "Type": "String"
+        },
+        "Sled1PublicIp": {
+            "Description": "Allocation id of an AWS Elastic IP to be used as the public ip of infra1 sled",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "SerfSetupWaitHandle": {
+            "Type": "AWS::CloudFormation::WaitConditionHandle"
+        },
+        "SerfSetupWaitCondition": {
+            "Type": "AWS::CloudFormation::WaitCondition",
+            "Properties": {
+                "Handle": {
+                    "Ref": "SerfSetupWaitHandle"
+                },
+                "Timeout": "3600"
+            }
+        },
+        "StackFinishedWaitHandle": {
+            "Type": "AWS::CloudFormation::WaitConditionHandle"
+        },
+        "StackFinishedWaitCondition": {
+            "Type": "AWS::CloudFormation::WaitCondition",
+            "Properties": {
+                "Handle": {
+                    "Ref": "StackFinishedWaitHandle"
+                },
+                "Count": "7",
+                "Timeout": "3600"
+            }
+        },
+        "NetworkingStack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/networking_template.json" ] ] 
+                }
+            }
+        },
+        "IAMStack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/iam_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "S3ChefBucket":   { "Ref" : "S3ChefBucket" }
+                }
+            }
+        },
+        "Sled1Stack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/sled1_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "KeyName":                      { "Ref" : "KeyName" },
+                    "InstanceType":                 { "Ref" : "InstanceType" },
+                    "ShipName":                     { "Ref" : "ShipName" },
+                    "ChefOrganization":             { "Ref" : "ChefOrganization" },
+                    "ChefClientRetries":            { "Ref" : "ChefClientRetries" },
+                    "Validator":                    { "Ref" : "Validator" },
+                    "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
+                    "DomainName":                   { "Ref" : "DomainName" },
+                    "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "Sled1PublicIp":                { "Ref" : "Sled1PublicIp" },
+                    "PrivateRouteTableId":          { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateRouteTableId" ] },
+                    "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
+                    "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },
+                    "Eth0Id":                       { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.Eth0Id" ] },
+                    "SerfSetupWaitHandleId":        { "Ref" : "SerfSetupWaitHandle" },
+                    "StackFinishedWaitHandleId":    { "Ref" : "StackFinishedWaitHandle" }
+                }
+            }
+        },
+        "Sled2Stack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn" : "SerfSetupWaitCondition",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/othersled_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "KeyName":                      { "Ref" : "KeyName" },
+                    "InstanceType":                 { "Ref" : "InstanceType" },
+                    "ShipName":                     { "Ref" : "ShipName" },
+                    "ChefOrganization":             { "Ref" : "ChefOrganization" },
+                    "ChefClientRetries":            { "Ref" : "ChefClientRetries" },
+                    "Validator":                    { "Ref" : "Validator" },
+                    "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
+                    "DomainName":                   { "Ref" : "DomainName" },
+                    "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
+                    "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },
+                    "PrivateSubnet":                { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSubnetId" ] },
+                    "PrivateSledsSecurityGroup":    { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSledsSecurityGroup" ] },
+                    "SledName":                     "sled2",
+                    "SerfSetupWaitHandleId":        { "Ref" : "SerfSetupWaitHandle" },
+                    "StackFinishedWaitHandleId":    { "Ref" : "StackFinishedWaitHandle" }
+                }
+            }
+        },
+        "Sled3Stack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn" : "SerfSetupWaitCondition",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/othersled_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "KeyName":                      { "Ref" : "KeyName" },
+                    "InstanceType":                 { "Ref" : "InstanceType" },
+                    "ShipName":                     { "Ref" : "ShipName" },
+                    "ChefOrganization":             { "Ref" : "ChefOrganization" },
+                    "ChefClientRetries":            { "Ref" : "ChefClientRetries" },
+                    "Validator":                    { "Ref" : "Validator" },
+                    "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
+                    "DomainName":                   { "Ref" : "DomainName" },
+                    "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
+                    "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },
+                    "PrivateSubnet":                { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSubnetId" ] },
+                    "PrivateSledsSecurityGroup":    { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSledsSecurityGroup" ] },
+                    "SledName":                     "sled3",
+                    "SerfSetupWaitHandleId":        { "Ref" : "SerfSetupWaitHandle" },
+                    "StackFinishedWaitHandleId":    { "Ref" : "StackFinishedWaitHandle" }
+                }
+            }
+        },
+        "Sled4Stack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn" : "SerfSetupWaitCondition",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/othersled_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "KeyName":                      { "Ref" : "KeyName" },
+                    "InstanceType":                 { "Ref" : "InstanceType" },
+                    "ShipName":                     { "Ref" : "ShipName" },
+                    "ChefOrganization":             { "Ref" : "ChefOrganization" },
+                    "ChefClientRetries":            { "Ref" : "ChefClientRetries" },
+                    "Validator":                    { "Ref" : "Validator" },
+                    "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
+                    "DomainName":                   { "Ref" : "DomainName" },
+                    "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
+                    "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },
+                    "PrivateSubnet":                { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSubnetId" ] },
+                    "PrivateSledsSecurityGroup":    { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSledsSecurityGroup" ] },
+                    "SledName":                     "sled4",
+                    "SerfSetupWaitHandleId":        { "Ref" : "SerfSetupWaitHandle" },
+                    "StackFinishedWaitHandleId":    { "Ref" : "StackFinishedWaitHandle" }
+                }
+            }
+        },
+        "Sled5Stack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn" : "SerfSetupWaitCondition",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/othersled_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "KeyName":                      { "Ref" : "KeyName" },
+                    "InstanceType":                 { "Ref" : "InstanceType" },
+                    "ShipName":                     { "Ref" : "ShipName" },
+                    "ChefOrganization":             { "Ref" : "ChefOrganization" },
+                    "ChefClientRetries":            { "Ref" : "ChefClientRetries" },
+                    "Validator":                    { "Ref" : "Validator" },
+                    "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
+                    "DomainName":                   { "Ref" : "DomainName" },
+                    "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
+                    "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },
+                    "PrivateSubnet":                { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSubnetId" ] },
+                    "PrivateSledsSecurityGroup":    { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSledsSecurityGroup" ] },
+                    "SledName":                     "sled5",
+                    "SerfSetupWaitHandleId":        { "Ref" : "SerfSetupWaitHandle" },
+                    "StackFinishedWaitHandleId":    { "Ref" : "StackFinishedWaitHandle" }
+                }
+            }
+        },
+        "Sled6Stack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn" : "SerfSetupWaitCondition",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/othersled_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "KeyName":                      { "Ref" : "KeyName" },
+                    "InstanceType":                 { "Ref" : "InstanceType" },
+                    "ShipName":                     { "Ref" : "ShipName" },
+                    "ChefOrganization":             { "Ref" : "ChefOrganization" },
+                    "ChefClientRetries":            { "Ref" : "ChefClientRetries" },
+                    "Validator":                    { "Ref" : "Validator" },
+                    "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
+                    "DomainName":                   { "Ref" : "DomainName" },
+                    "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
+                    "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },
+                    "PrivateSubnet":                { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSubnetId" ] },
+                    "PrivateSledsSecurityGroup":    { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSledsSecurityGroup" ] },
+                    "SledName":                     "sled6",
+                    "SerfSetupWaitHandleId":        { "Ref" : "SerfSetupWaitHandle" },
+                    "StackFinishedWaitHandleId":    { "Ref" : "StackFinishedWaitHandle" }
+                }
+            }
+        },
+        "Sled7Stack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn" : "SerfSetupWaitCondition",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/othersled_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "KeyName":                      { "Ref" : "KeyName" },
+                    "InstanceType":                 { "Ref" : "InstanceType" },
+                    "ShipName":                     { "Ref" : "ShipName" },
+                    "ChefOrganization":             { "Ref" : "ChefOrganization" },
+                    "ChefClientRetries":            { "Ref" : "ChefClientRetries" },
+                    "Validator":                    { "Ref" : "Validator" },
+                    "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
+                    "DomainName":                   { "Ref" : "DomainName" },
+                    "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
+                    "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },
+                    "PrivateSubnet":                { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSubnetId" ] },
+                    "PrivateSledsSecurityGroup":    { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSledsSecurityGroup" ] },
+                    "SledName":                     "sled7",
+                    "SerfSetupWaitHandleId":        { "Ref" : "SerfSetupWaitHandle" },
+                    "StackFinishedWaitHandleId":    { "Ref" : "StackFinishedWaitHandle" }
+                }
+            }
+        },
+        "Sled8Stack" : {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn" : "SerfSetupWaitCondition",
+            "Properties": {
+                "TemplateURL": { 
+                    "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/othersled_template.json" ] ] 
+                } ,
+                "Parameters" : {
+                    "KeyName":                      { "Ref" : "KeyName" },
+                    "InstanceType":                 { "Ref" : "InstanceType" },
+                    "ShipName":                     { "Ref" : "ShipName" },
+                    "ChefOrganization":             { "Ref" : "ChefOrganization" },
+                    "ChefClientRetries":            { "Ref" : "ChefClientRetries" },
+                    "Validator":                    { "Ref" : "Validator" },
+                    "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
+                    "DomainName":                   { "Ref" : "DomainName" },
+                    "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
+                    "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },
+                    "PrivateSubnet":                { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSubnetId" ] },
+                    "PrivateSledsSecurityGroup":    { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateSledsSecurityGroup" ] },
+                    "SledName":                     "sled8",
+                    "SerfSetupWaitHandleId":        { "Ref" : "SerfSetupWaitHandle" },
+                    "StackFinishedWaitHandleId":    { "Ref" : "StackFinishedWaitHandle" }
+                }
+            }
+        }               
+    },
+    "Outputs" : {
+        "Sled1DNS": {
+            "Description": "Public DNS name of sled1 sled",
+            "Value": { "Fn::GetAtt" : [ "Sled1Stack", "Outputs.Sled1DNS" ] }
+        }
+    }
+}

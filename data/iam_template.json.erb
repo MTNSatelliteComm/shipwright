@@ -1,0 +1,84 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Ship in a Bottle IAM, S3 and Keys",
+    "Parameters": {
+        "S3ChefBucket": {
+            "Description": "Existing S3 bucket",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+       "ChefClientUser": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "root",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["cloudformation:DescribeStackResource", "s3:Get"],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "HostKeys": {
+            "Type": "AWS::IAM::AccessKey",
+            "DependsOn": "ChefClientUser",
+            "Properties": {
+                "UserName": {
+                    "Ref": "ChefClientUser"
+                }
+            }
+        },
+        "BucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "DependsOn": "HostKeys",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2008-10-17",
+                    "Id": "ReadPolicy",
+                    "Statement": [
+                        {
+                            "Sid": "ReadAccess",
+                            "Action": ["s3:GetObject", "s3:PutObject"],
+                            "Effect": "Allow",
+                            "Resource": {
+                                "Fn::Join": ["",
+                                    ["arn:aws:s3:::", {
+                                            "Ref": "S3ChefBucket"
+                                        }, "/*"
+                                    ]
+                                ]
+                            },
+                            "Principal": {
+                                "AWS": {
+                                    "Fn::GetAtt": ["ChefClientUser", "Arn"]
+                                }
+                            }
+                        }
+                    ]
+                },
+                "Bucket": {
+                    "Ref": "S3ChefBucket"
+                }
+            }
+        }
+    },
+    "Outputs" : {
+        "HostKeys" : {
+            "Description" : "Host keys",
+            "Value" : { "Ref" : "HostKeys" }
+        },
+        "HostSecret" : {
+            "Description" : "Host keys",
+            "Value" : { "Fn::GetAtt" : [ "HostKeys", "SecretAccessKey" ] }
+        }
+    }
+}
