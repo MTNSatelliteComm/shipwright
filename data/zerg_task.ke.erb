@@ -9,7 +9,7 @@
                     "secret_access_key": "<%= aws_secret %>",
                     "template_file": "main_template.json",
                     "template_parameters": {
-                        "InstanceType": "m1.large",
+                        "InstanceType": "m3.medium",
                         "KeyName": "<%= aws_keypair %>",
                         "ShipName": "<%= ship_name %>",
                         "ChefEnvironment": "<%= chef_env %>",
