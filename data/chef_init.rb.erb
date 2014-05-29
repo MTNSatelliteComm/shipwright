@@ -15,7 +15,7 @@ sled_name = nil
 bucket_name = "ship-in-a-bottle"
 upload_key = false
 debug_chef = false
-user_account = "ubuntu"
+user_account = "root"
 retries = 1
 
 #
@@ -43,6 +43,11 @@ abort("Organization name is required!") unless organization != nil
 abort("Ship name is required!") unless ship_name != nil
 abort("Sled name is required!") unless sled_name != nil
 validator = "#{organization}-validator" unless validator != nil
+
+user_folder = "/home/#{user_account}"
+if user_account == "root"
+    user_folder = "/root"
+end
 
 #
 # build the node name
@@ -107,7 +112,7 @@ if upload_key == true
     #
     # try to download previous client key and delete the previously created client and node
     #
-    client_key_pem = Process.spawn("s3cmd -c /home/#{user_account}/.s3cfg get s3://#{bucket_name}/#{node_name}.#{domain_name}-client.pem /etc/chef/client.pem")
+    client_key_pem = Process.spawn("s3cmd -c #{user_folder}/.s3cfg get s3://#{bucket_name}/#{node_name}.#{domain_name}-client.pem /etc/chef/client.pem --force")
     Process.wait(client_key_pem)
     if $?.exitstatus == 0
         knife_delete_pid = Process.spawn("knife node delete #{node_name}.#{domain_name} --yes --config /etc/chef/knife.rb 2>&1")
@@ -134,7 +139,7 @@ end
 
 if upload_key == true
     # upload client key file to s3
-    s3_upload_pid = Process.spawn("s3cmd -c /home/#{user_account}/.s3cfg put /etc/chef/client.pem s3://#{bucket_name}/#{node_name}.#{domain_name}-client.pem")
+    s3_upload_pid = Process.spawn("s3cmd -c #{user_folder}/.s3cfg put /etc/chef/client.pem s3://#{bucket_name}/#{node_name}.#{domain_name}-client.pem")
     Process.wait(s3_upload_pid)
 end
 
@@ -144,7 +149,7 @@ if upload_key == true
     abort("Failed to upload /etc/chef/client.pem to s3://#{bucket_name}/#{node_name}.#{domain_name}-client.pem") unless $?.exitstatus == 0
 
     # if chef run succeeded - upload the ship chef validator
-    s3_upload_pid = Process.spawn("s3cmd -c /home/#{user_account}/.s3cfg put /root/.chef/peasplitter-validation.pem s3://#{bucket_name}/#{node_name}.#{domain_name}-validator.pem")
+    s3_upload_pid = Process.spawn("s3cmd -c #{user_folder}/.s3cfg put /root/.chef/peasplitter-validation.pem s3://#{bucket_name}/#{node_name}.#{domain_name}-validator.pem")
     Process.wait(s3_upload_pid)
     abort("Could not upload ship chef validator") unless $?.exitstatus == 0
 end

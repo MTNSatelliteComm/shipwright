@@ -1,0 +1,363 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Ship in a Bottle EC2 Sled1",
+    "Parameters": {
+        "KeyName": {
+            "Type": "String",
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the web server"
+        },
+        "InstanceType": {
+            "Description": "Application Server EC2 instance type",
+            "Type": "String",
+            "AllowedValues": ["m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge"],
+            "ConstraintDescription": "must be a valid EC2 instance type."
+        },
+        "ShipName": {
+            "Description": "Test ship name",
+            "Type": "String",
+            "ConstraintDescription": "Must be a valid ship name from AWS fleet."
+        },
+        "ChefOrganization": {
+            "Description": "The Organization name used in Hosted Chef.",
+            "Type": "String",
+            "Default": "mtn-pipelines"
+        },
+        "ChefClientRetries": {
+            "Description": "How many times to retry chef client run before giving up.",
+            "Type": "Number",
+            "Default": "3",
+            "MinValue" : "1"
+        },
+        "Validator": {
+            "Description": "validation client name.",
+            "Type": "String",
+            "Default": "mtn-pipelines-validator"
+        },
+        "ChefEnvironment": {
+            "Description": "The Chef Environment.",
+            "Type": "String",
+            "Default": "prod"
+        },
+        "DomainName": {
+            "Description": "Server Domain Name.",
+            "Type": "String",
+            "Default": "mtnsatcloud.com"
+        },
+        "S3ChefBucket": {
+            "Description": "S3 bucket containing validation private key for Chef Server",
+            "Type": "String"
+        },
+        "Sled1PublicIp": {
+            "Description": "Allocation id of an AWS Elastic IP to be used as the public ip of sled1 sled",
+            "Type": "String"
+        },
+        "HostKeysKey": {
+            "Description": "HostKey from IAM host keys",
+            "Type": "String"
+        },
+        "HostKeysSecretAccessKey": {
+            "Description": "SecretAccessKey from IAM host keys",
+            "Type": "String"
+        },
+        "Eth0Id": {
+            "Description": "Id of Eth0 created by networking stack",
+            "Type": "String"
+        },
+        "PrivateRouteTableId": {
+            "Description": "Id of PrivateRouteTable created by networking stack",
+            "Type": "String"
+        },
+        "SerfSetupWaitHandleId" : {
+            "Description" : "Id of wait handle signaled when Serf is dones setting up on Sled1",
+            "Type": "String"
+        },
+        "StackFinishedWaitHandleId" : {
+            "Description" : "Id of wait handle signaled by each sled upon full sled build completion",
+            "Type": "String"
+        }
+    },
+    "Mappings": {
+        "AWSInstanceType2Arch": {
+            "m3.medium": {
+                "Arch": "64"
+            },
+            "m3.large": {
+                "Arch": "64"
+            },
+            "m3.xlarge": {
+                "Arch": "64"
+            },
+            "m3.2xlarge": {
+                "Arch": "64"
+            }
+        },
+        "AWSRegionArch2AMI" : {
+            "us-east-1"      : { "32" : "ami-359c9f5c", "64" : "ami-0b9c9f62" },
+            "us-west-2"      : { "32" : "ami-c6bed2f6", "64" : "ami-c8bed2f8" },
+            "us-west-1"      : { "32" : "ami-769ba733", "64" : "ami-709ba735" },                                
+            "eu-west-1"      : { "32" : "ami-55e91b22", "64" : "ami-51e91b26" },
+            "ap-southeast-1" : { "32" : "ami-647d2c36", "64" : "ami-51821b6b" },
+            "ap-southeast-2" : { "32" : "ami-53821b69", "64" : "ami-51821b6b" },
+            "ap-northeast-1" : { "32" : "ami-43255342", "64" : "ami-45255344" },
+            "sa-east-1"      : { "32" : "ami-739c3f6e", "64" : "ami-6d9c3f70" }
+        }
+    },
+    "Resources": {
+        "PrivateRoute" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "RouteTableId" : { "Ref" : "PrivateRouteTableId" },
+                "DestinationCidrBlock" : "0.0.0.0/0",
+                "InstanceId" : { "Ref" : "Sled1" }
+            }
+        },
+        "Sled1EIPAssociation" : {
+            "Type": "AWS::EC2::EIPAssociation",
+            "Properties": {
+                "AllocationId": { "Ref" : "Sled1PublicIp" },
+                "InstanceId" : { "Ref" : "Sled1" }
+            }
+        },
+        "Sled1" : {
+            "Type" : "AWS::EC2::Instance",
+            "Metadata" : { 
+                "AWS::CloudFormation::Authentication" : {
+                    "S3AccessCreds" : {
+                        "type" : "S3",
+                        "buckets": [ { "Ref" : "S3ChefBucket" } ],
+                        "accessKeyId" : { "Ref" : "HostKeysKey" },
+                        "secretKey" : { "Ref" : "HostKeysSecretAccessKey" }
+                    }
+                },
+                "AWS::CloudFormation::Init": {
+                    "config": {
+                        "files": {
+                            "/root/.s3cfg": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        ["[default]\n", "access_key = ", {
+                                                "Ref": "HostKeysKey"
+                                            }, "\n", "secret_key = ", {
+                                                "Ref": "HostKeysSecretAccessKey"
+                                            }, "\n", "use_https = True\n"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/etc/chef/first-boot.json": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled1]\" ] }"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/etc/init/serf.conf": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "# Serf Agent (Upstart unit)\n",
+                                            "description \"Serf Agent\"\n",
+                                            "start on (local-filesystems and net-device-up IFACE!=lo)\n",
+                                            "stop on runlevel [06]\n\n",
+                                            "env SERF=/usr/bin/serf\n",
+                                            "env SERFCONFIG=/etc/serf\n\n",
+                                            "setuid root\n",
+                                            "setgid root\n\n",
+                                            "# Serf emits log messages to stdout, and upstart will write that to\n",
+                                            "# /var/log/upstart/serf.log\n",
+                                            "exec $SERF agent -config-dir $SERFCONFIG\n\n",
+                                            "respawn\n",
+                                            "respawn limit 10 10\n",
+                                            "kill timeout 10\n"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/var/log/ship_in_a_bottle/README": {
+                                "content": "All logs from ship in a bottle creation process end up here.",
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/etc/chef/ohai/hints/ec2.json": {
+                                "content": {
+                                    "Fn::Join": ["",
+                                        [
+                                            "{}"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/etc/serf/serf.json": {
+                                "content": {
+                                    "tags": {
+                                        "role": "sled1"
+                                    },
+                                    "bind": "172.16.31.6:7946"
+                                },
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/etc/chef/chef_init.rb": {
+                                "source": {
+                                    "Fn::Join" : [
+                                        "", [ "https://", { "Ref" : "S3ChefBucket" }, ".s3.amazonaws.com/chef_init.rb" ]
+                                    ]
+                                },
+                                "mode": "000755",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/etc/chef/validation.pem": {
+                                "source": {
+                                    "Fn::Join" : [
+                                        "", [ "https://", { "Ref" : "S3ChefBucket" }, ".s3.amazonaws.com/validation.pem" ]
+                                    ]
+                                },
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/home/ubuntu/chef_11.10.4-1.ubuntu.12.04_amd64.deb" : {
+                                "source" : "https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/12.04/x86_64/chef_11.10.4-1.ubuntu.12.04_amd64.deb",
+                                "mode"   : "000664",
+                                "owner"  : "ubuntu",
+                                "group"  : "ubuntu"
+                            }
+                        }, 
+                        "sources": {
+                            "/usr/bin" : "https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip"
+                        },
+                        "commands" : {
+                            "1-setup-secondary-ip" : {
+                                "command" : "sudo echo -e \"\n    address 172.16.31.5\n    netmask 255.255.255.0\n    gateway 172.16.31.1\n    up ip addr add 172.16.31.6/24 dev eth0\" >> /etc/network/interfaces.d/eth0.cfg",
+                                "ignoreErrors" : "false"
+                            },
+                            "2-update-iptables" : {
+                                "command" : "sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE",
+                                "ignoreErrors" : "false"
+                            },
+                            "3-setup-forwarding" : {
+                                "command" : "sudo sysctl -w net.ipv4.ip_forward=1",
+                                "ignoreErrors" : "false"
+                            },
+                            "3-restart-networking" : {
+                                "command" : "sudo /etc/init.d/networking restart",
+                                "ignoreErrors" : "false"
+                            },
+                            "4-start-serf" : {
+                                "command" : "sudo chmod a+x /usr/bin/serf; sudo initctl reload-configuration; sudo start serf",
+                                "ignoreErrors" : "false"
+                            },
+                            "5-signal-serf-installed" : {
+                                "command" : {
+                                    "Fn::Join" : [
+                                        "", [ "cfn-signal -e 0 -r 'Serf setup finished' '", { "Ref": "SerfSetupWaitHandleId" }, "'" ]
+                                    ]
+                                },
+                                "ignoreErrors" : "false"
+                            },
+                            "6-install-apt-packages" : {
+                                "command" : "sudo apt-get -y --force-yes install s3cmd ssl-cert",
+                                "ignoreErrors" : "false"
+                            },
+                            "7-install-chef" : {
+                                "command" : "dpkg -i /home/ubuntu/chef_11.10.4-1.ubuntu.12.04_amd64.deb",
+                                "ignoreErrors" : "false"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties" : {
+                "InstanceType" : { "Ref" : "InstanceType" },
+                "KeyName" : { "Ref" : "KeyName" },
+                "NetworkInterfaces" : [ { "NetworkInterfaceId" : {"Ref" : "Eth0Id"}, "DeviceIndex" : "0" } ],
+                "ImageId": {
+                    "Fn::FindInMap": ["AWSRegionArch2AMI", {
+                            "Ref": "AWS::Region"
+                        }, {
+                            "Fn::FindInMap": ["AWSInstanceType2Arch", {
+                                    "Ref": "InstanceType"
+                                }, "Arch"
+                            ]
+                        }
+                    ]
+                },
+                "UserData" : {
+                    "Fn::Base64": {
+                        "Fn::Join": ["",
+                            [
+                                "#!/bin/bash -v\n", 
+                                "function error_exit\n", 
+                                "{\n",
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandleId" }, 
+                                "'\n", 
+                                "  exit 1\n", 
+                                "}\n", 
+                                "sudo apt-get update\n",
+                                "sudo apt-get -y --force-yes remove apparmor libapparmor1\n",
+                                "sudo apt-get -y --force-yes install python-pip\n",
+                                "until sudo pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz --timeout=60; do\n",
+                                "   echo 'pip error, retrying in 10 seconds...'\n", 
+                                "   sleep 10\n",
+                                "done\n",
+                                "sudo cfn-init -v ", 
+                                "         -s ", { "Ref": "AWS::StackName" }, 
+                                "         -r Sled1 ", 
+                                "         --access-key ", { "Ref": "HostKeysKey" }, 
+                                "         --secret-key ", { "Ref": "HostKeysSecretAccessKey" }, 
+                                "         --region     ", { "Ref": "AWS::Region" }, 
+                                " || error_exit 'Failed to run cfn-init'\n",
+                                "sudo /opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb", " -b ", { "Ref": "S3ChefBucket" }, " -c \"https://private-chef.mtnsatcloud.com\" -d ", { "Ref": "DomainName" }, " -e ", { "Ref": "ChefEnvironment" }, " -o ", { "Ref": "ChefOrganization" }, " -r ", { "Ref": "ChefClientRetries" }, " -s ", { "Ref": "ShipName" }, " -v ", { "Ref": "Validator" }, " -u -l sled1 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n",
+                                "sleep 60\n", 
+                                "JOBURL=http://jenkins-ci.mtnsatcloud.com/job/promote-to-ship\n",
+                                "JSONURL=${JOBURL}/lastBuild/api/json\n",
+                                "curl --data \"SHIPNAME=", { "Ref": "ShipName" }, "&PROMOTEFROM=", { "Ref": "ChefEnvironment" }, "\" ${JOBURL}/buildWithParameters || error_exit 'Failed to run start promote job.'\n",
+                                "sleep 10\n",
+                                "GREP_RETURN_CODE=0\n",
+                                "while [ $GREP_RETURN_CODE -eq 0 ]\n",
+                                "do\n",
+                                "    sleep 3\n",
+                                "    curl ${JSONURL} | grep \\\"result\\\":null\n",
+                                "    GREP_RETURN_CODE=$?\n",
+                                "done\n",
+                                "curl ${JSONURL} | grep \\\"result\\\":\\\"SUCCESS\\\" || error_exit 'Promote job failed.'\n",
+                                "serf event chef_on_ship"
+                            ]
+                        ]
+                    }
+                },
+                "Tags" : [ 
+                    { 
+                        "Key" : "Name", 
+                        "Value" : { 
+                            "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled1" ] ] 
+                        } 
+                    } 
+                ]
+            }
+        }
+    },
+    "Outputs" : {
+        "Sled1DNS" : {
+            "Description" : "Public DNS name of the sled1 sled",
+            "Value" : { "Fn::GetAtt" : ["Sled1", "PublicDnsName"] }
+        }
+    }
+}
