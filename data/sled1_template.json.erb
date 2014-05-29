@@ -306,7 +306,7 @@
                                 "#!/bin/bash -v\n", 
                                 "function error_exit\n", 
                                 "{\n",
-                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "SerfSetupWaitHandleId" }, 
+                                "\n", "  cfn-signal -e 1 -r \"$1\" '", { "Ref": "StackFinishedWaitHandleId" }, 
                                 "'\n", 
                                 "  exit 1\n", 
                                 "}\n", 
