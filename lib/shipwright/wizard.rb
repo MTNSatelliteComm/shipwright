@@ -88,7 +88,7 @@ module Shipwright
             # construct a ship name.
             ship_short_name = nil
             if ships.empty?
-                ship_short_name = "#{config[:gerrit_user]}1"
+                ship_short_name = "aws-#{config[:gerrit_user]}1"
             else
                 ships.sort!
                 ship_short_name = "aws-#{config[:gerrit_user]}#{File.basename( ships[-1], ".*" )[-1].to_i + 1}"
