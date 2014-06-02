@@ -47,6 +47,10 @@
             "Description": "S3 bucket containing validation private key for Chef Server",
             "Type": "String"
         },
+        "BackupBucket": {
+            "Description": "Existing S3 bucket",
+            "Type": "String"
+        },
         "Sled1PublicIp": {
             "Description": "Allocation id of an AWS Elastic IP to be used as the public ip of infra1 sled",
             "Type": "String"
@@ -93,7 +97,8 @@
                     "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/iam_template.json" ] ] 
                 } ,
                 "Parameters" : {
-                    "S3ChefBucket":   { "Ref" : "S3ChefBucket" }
+                    "S3ChefBucket":   { "Ref" : "S3ChefBucket" },
+                    "BackupBucket":   { "Ref" : "BackupBucket" }
                 }
             }
         },
@@ -113,6 +118,7 @@
                     "ChefEnvironment":              { "Ref" : "ChefEnvironment" },
                     "DomainName":                   { "Ref" : "DomainName" },
                     "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
+                    "BackupBucket":                 { "Ref" : "BackupBucket" },
                     "Sled1PublicIp":                { "Ref" : "Sled1PublicIp" },
                     "PrivateRouteTableId":          { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateRouteTableId" ] },
                     "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },

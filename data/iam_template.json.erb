@@ -5,6 +5,10 @@
         "S3ChefBucket": {
             "Description": "Existing S3 bucket",
             "Type": "String"
+        },
+        "BackupBucket": {
+            "Description": "Existing S3 bucket containing central chef backups",
+            "Type": "String"
         }
     },
     "Resources": {
@@ -21,6 +25,11 @@
                                     "Effect": "Allow",
                                     "Action": ["cloudformation:DescribeStackResource", "s3:Get"],
                                     "Resource": "*"
+                                },
+                                {
+                                    "Action": "s3:ListBucket",
+                                    "Effect": "Allow",
+                                    "Resource": "arn:aws:s3:::*"
                                 }
                             ]
                         }
@@ -37,7 +46,7 @@
                 }
             }
         },
-        "BucketPolicy": {
+        "ChefBucketPolicy": {
             "Type": "AWS::S3::BucketPolicy",
             "DependsOn": "HostKeys",
             "Properties": {
@@ -67,6 +76,39 @@
                 },
                 "Bucket": {
                     "Ref": "S3ChefBucket"
+                }
+            }
+        },
+        "BackupBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "DependsOn": "HostKeys",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2008-10-17",
+                    "Id": "ReadPolicy",
+                    "Statement": [
+                        {
+                            "Sid": "ReadAccess",
+                            "Action": ["s3:GetObject"],
+                            "Effect": "Allow",
+                            "Resource": {
+                                "Fn::Join": ["",
+                                    ["arn:aws:s3:::", {
+                                            "Ref": "BackupBucket"
+                                        }, "/*"
+                                    ]
+                                ]
+                            },
+                            "Principal": {
+                                "AWS": {
+                                    "Fn::GetAtt": ["ChefClientUser", "Arn"]
+                                }
+                            }
+                        }
+                    ]
+                },
+                "Bucket": {
+                    "Ref": "BackupBucket"
                 }
             }
         }
