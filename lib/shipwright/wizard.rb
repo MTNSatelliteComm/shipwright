@@ -41,7 +41,7 @@ module Shipwright
             end
 
             config[:gerrit_user] = ask("Enter your Gerrit user name:  ") if config[:gerrit_user].nil?
-            config[:validator_path] = ask("Enter full path to the location of mtn pipelines validator pem:  ") if config[:validator_path].nil?
+            config[:validator_path] = File.expand_path(ask("Enter full path to the location of mtn pipelines validator pem:  ")) if config[:validator_path].nil?
             config[:validator_client] = ask("Enter the name of your chef validation client (e.g. 'johndoe-validator'):  ") if config[:validator_client].nil?
 
             if config[:chef_env].nil?
@@ -82,7 +82,7 @@ module Shipwright
 
             ships = []
             Find.find('/tmp/cookbook-ship/recipes') do |path|
-              ships << path if path =~ /mtn\-#{Regexp.escape(config[:gerrit_user])}\d+\.rb$/
+              ships << path if path =~ /mtn\-aws\-#{Regexp.escape(config[:gerrit_user])}\d+\.rb$/
             end
 
             # construct a ship name.
