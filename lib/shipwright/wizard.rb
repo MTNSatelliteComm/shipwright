@@ -226,6 +226,7 @@ module Shipwright
                 :ship_name => ship_name,
                 :chef_env => config[:chef_env],
                 :public_ip_alloc_id => elastic_ip["allocationId"],
+                :public_ip_addr => elastic_ip["publicIp"],
                 :aws_bucket => "sib-#{ship_short_name}",
                 :rabbit_host => rabbit_info["rabbit_host"],
                 :rabbit_port => rabbit_info["rabbit_port"],

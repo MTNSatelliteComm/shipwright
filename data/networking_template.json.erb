@@ -154,7 +154,8 @@
                     { "IpProtocol" : "tcp",  "FromPort" : "3030", "ToPort" : "3030", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
                     { "IpProtocol" : "udp",  "FromPort" : "7946", "ToPort" : "7946", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } ,
                     { "IpProtocol" : "tcp",  "FromPort" : "7946", "ToPort" : "7946", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } }
+                    { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } },
+                    { "IpProtocol" : "-1", "FromPort" : "-1",   "ToPort" : "-1",  "CidrIp" : "172.16.30.0/24" }
                 ],
                 "Tags" : [
                     { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "OtherSledSecurityGroup" ] ] } }

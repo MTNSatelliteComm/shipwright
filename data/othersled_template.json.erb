@@ -241,6 +241,17 @@
                                         ]
                                     },
                                     "start_join": [ "172.16.31.6:7946" ],
+                                    "profile": "wan",
+                                    "encrypt_key": "eJcSFFUl4Hl4Y2ao1h7ByQ==",
+                                    "node_name": {
+                                        "Fn::Join": ["",
+                                            [
+                                                { "Ref": "ShipName" },
+                                                "-",
+                                                { "Ref": "SledName" }
+                                            ]
+                                        ]
+                                    },
                                     "event_handlers": [ "user:chef_on_ship=/etc/chef/chef_on_ship_handler.sh" ]
                                 },
                                 "mode": "000644",
