@@ -54,6 +54,10 @@
         "Sled1PublicIp": {
             "Description": "Allocation id of an AWS Elastic IP to be used as the public ip of infra1 sled",
             "Type": "String"
+        },
+        "Sled1PublicIpAddr": {
+            "Description": "AWS Elastic IP to be used as the public ip of sled1 sled",
+            "Type": "String"
         }
     },
     "Resources": {
@@ -120,6 +124,7 @@
                     "S3ChefBucket":                 { "Ref" : "S3ChefBucket" },
                     "BackupBucket":                 { "Ref" : "BackupBucket" },
                     "Sled1PublicIp":                { "Ref" : "Sled1PublicIp" },
+                    "Sled1PublicIpAddr":            { "Ref" : "Sled1PublicIpAddr" },
                     "PrivateRouteTableId":          { "Fn::GetAtt" : [ "NetworkingStack", "Outputs.PrivateRouteTableId" ] },
                     "HostKeysKey":                  { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostKeys" ] },
                     "HostKeysSecretAccessKey":      { "Fn::GetAtt" : [ "IAMStack", "Outputs.HostSecret" ] },

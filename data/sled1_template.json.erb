@@ -55,6 +55,10 @@
             "Description": "Allocation id of an AWS Elastic IP to be used as the public ip of sled1 sled",
             "Type": "String"
         },
+        "Sled1PublicIpAddr": {
+            "Description": "AWS Elastic IP to be used as the public ip of sled1 sled",
+            "Type": "String"
+        },
         "HostKeysKey": {
             "Description": "HostKey from IAM host keys",
             "Type": "String"
@@ -211,7 +215,25 @@
                                     "tags": {
                                         "role": "sled1"
                                     },
-                                    "bind": "172.16.31.6:7946"
+                                    "bind": "172.16.31.6:7946",
+                                    "advertise": {
+                                        "Fn::Join": ["",
+                                            [
+                                                { "Ref": "Sled1PublicIpAddr" },
+                                                ":7946"
+                                            ]
+                                        ]
+                                    },
+                                    "profile": "wan",
+                                    "encrypt_key": "eJcSFFUl4Hl4Y2ao1h7ByQ==",
+                                    "node_name": {
+                                        "Fn::Join": ["",
+                                            [
+                                                { "Ref": "ShipName" },
+                                                "-sled1"
+                                            ]
+                                        ]
+                                    }
                                 },
                                 "mode": "000644",
                                 "owner": "root",
