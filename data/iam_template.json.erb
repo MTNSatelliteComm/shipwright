@@ -1,18 +1,8 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Ship in a Bottle IAM, S3 and Keys",
-    "Parameters": {
-        "S3ChefBucket": {
-            "Description": "Existing S3 bucket",
-            "Type": "String"
-        },
-        "BackupBucket": {
-            "Description": "Existing S3 bucket containing central chef backups",
-            "Type": "String"
-        }
-    },
     "Resources": {
-       "ChefClientUser": {
+        "ChefClientUser": {
             "Type": "AWS::IAM::User",
             "Properties": {
                 "Path": "/",
@@ -23,11 +13,21 @@
                             "Statement": [
                                 {
                                     "Effect": "Allow",
-                                    "Action": ["cloudformation:DescribeStackResource", "s3:Get"],
+                                    "Action": ["cloudformation:DescribeStackResource"],
                                     "Resource": "*"
                                 },
                                 {
                                     "Action": "s3:ListBucket",
+                                    "Effect": "Allow",
+                                    "Resource": "arn:aws:s3:::*"
+                                },
+                                {
+                                    "Action": "s3:GetObject",
+                                    "Effect": "Allow",
+                                    "Resource": "arn:aws:s3:::*"
+                                },
+                                {
+                                    "Action": "s3:PutObject",
                                     "Effect": "Allow",
                                     "Resource": "arn:aws:s3:::*"
                                 }
@@ -43,72 +43,6 @@
             "Properties": {
                 "UserName": {
                     "Ref": "ChefClientUser"
-                }
-            }
-        },
-        "ChefBucketPolicy": {
-            "Type": "AWS::S3::BucketPolicy",
-            "DependsOn": "HostKeys",
-            "Properties": {
-                "PolicyDocument": {
-                    "Version": "2008-10-17",
-                    "Id": "ReadPolicy",
-                    "Statement": [
-                        {
-                            "Sid": "ReadAccess",
-                            "Action": ["s3:GetObject", "s3:PutObject"],
-                            "Effect": "Allow",
-                            "Resource": {
-                                "Fn::Join": ["",
-                                    ["arn:aws:s3:::", {
-                                            "Ref": "S3ChefBucket"
-                                        }, "/*"
-                                    ]
-                                ]
-                            },
-                            "Principal": {
-                                "AWS": {
-                                    "Fn::GetAtt": ["ChefClientUser", "Arn"]
-                                }
-                            }
-                        }
-                    ]
-                },
-                "Bucket": {
-                    "Ref": "S3ChefBucket"
-                }
-            }
-        },
-        "BackupBucketPolicy": {
-            "Type": "AWS::S3::BucketPolicy",
-            "DependsOn": "HostKeys",
-            "Properties": {
-                "PolicyDocument": {
-                    "Version": "2008-10-17",
-                    "Id": "ReadPolicy",
-                    "Statement": [
-                        {
-                            "Sid": "ReadAccess",
-                            "Action": ["s3:GetObject"],
-                            "Effect": "Allow",
-                            "Resource": {
-                                "Fn::Join": ["",
-                                    ["arn:aws:s3:::", {
-                                            "Ref": "BackupBucket"
-                                        }, "/*"
-                                    ]
-                                ]
-                            },
-                            "Principal": {
-                                "AWS": {
-                                    "Fn::GetAtt": ["ChefClientUser", "Arn"]
-                                }
-                            }
-                        }
-                    ]
-                },
-                "Bucket": {
-                    "Ref": "BackupBucket"
                 }
             }
         }
