@@ -99,10 +99,6 @@
             "Properties": {
                 "TemplateURL": { 
                     "Fn::Join" : [ "", [ "https://s3.amazonaws.com/", { "Ref" : "S3ChefBucket" }, "/iam_template.json" ] ] 
-                } ,
-                "Parameters" : {
-                    "S3ChefBucket":   { "Ref" : "S3ChefBucket" },
-                    "BackupBucket":   { "Ref" : "BackupBucket" }
                 }
             }
         },
