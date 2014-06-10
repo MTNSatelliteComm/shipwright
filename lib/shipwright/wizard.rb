@@ -218,7 +218,7 @@ module Shipwright
 
             puts "Preparing #{ship_name}.ke file"
             item_template = File.open(File.join("#{File.dirname(__FILE__)}", "..", "..", "data", "zerg_task.ke.erb"), 'r').read
-            rabbit_info = JSON.parse( IO.read("/tmp/chef-repo/data_bags/ship-in-a-bottle/rabbit_info.json") )
+            rabbit_info = JSON.parse( IO.read("/tmp/chef-repo/data_bags/cicd/chef_handler_rabbit_info.json") )
             sources = {
                 :aws_key_id => aws_info["aws_key"],
                 :aws_secret => aws_info["aws_secret"],
