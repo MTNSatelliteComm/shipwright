@@ -166,7 +166,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::", { "Ref": "SledName" }, "]\" ] }"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::", { "Ref": "SledName" }, "]\", \"recipe[mtn_roles::serf_ship_slave]\" ] }"
                                         ]
                                     ]
                                 },
@@ -174,7 +174,7 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/init/serf.conf": {
+                            "/etc/init/bootstrap_serf.conf": {
                                 "content": {
                                     "Fn::Join": ["",
                                         [
@@ -182,12 +182,12 @@
                                             "description \"Serf Agent\"\n",
                                             "start on (local-filesystems and net-device-up IFACE!=lo)\n",
                                             "stop on runlevel [06]\n\n",
-                                            "env SERF=/usr/bin/serf\n",
-                                            "env SERFCONFIG=/etc/serf\n\n",
+                                            "env SERF=/usr/bin/sib_bootstrap/serf\n",
+                                            "env SERFCONFIG=/etc/sib_bootstrap/serf\n\n",
                                             "setuid root\n",
                                             "setgid root\n\n",
                                             "# Serf emits log messages to stdout, and upstart will write that to\n",
-                                            "# /var/log/upstart/serf.log\n",
+                                            "# /var/log/upstart/bootstrap_serf.log\n",
                                             "exec $SERF agent -config-dir $SERFCONFIG\n\n",
                                             "respawn\n",
                                             "respawn limit 10 10\n",
@@ -205,6 +205,12 @@
                                 "owner": "root",
                                 "group": "root"
                             },
+                            "/usr/bin/sib_bootstrap/README": {
+                                "content": "bootstrap instance of serf.",
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
                             "/etc/chef/ohai/hints/ec2.json": {
                                 "content": {
                                     "Fn::Join": ["",
@@ -217,7 +223,7 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/serf/serf.json": {
+                            "/etc/sib_bootstrap/serf/serf.json": {
                                 "content": {
                                     "tags": {
                                         "role": {
@@ -236,11 +242,11 @@
                                                             "Ref": "SledName"
                                                         }, "ip"
                                                     ]
-                                                }, "7946"
+                                                }, "6946"
                                             ]
                                         ]
                                     },
-                                    "start_join": [ "172.16.31.6:7946" ],
+                                    "start_join": [ "172.16.31.6:6946" ],
                                     "profile": "wan",
                                     "encrypt_key": "eJcSFFUl4Hl4Y2ao1h7ByQ==",
                                     "node_name": {
@@ -287,7 +293,9 @@
                                             "}\n", 
                                             "s3cmd -c /root/.s3cfg get s3://", { "Ref": "S3ChefBucket" }, "/", { "Ref": "ShipName" }, "-sled1.", { "Ref": "DomainName" }, "-validator.pem  /etc/chef/validation.pem >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || cfn-signal -e 1 -r 'Failed to download peasplitter validator.' '", { "Ref": "StackFinishedWaitHandleId" }, "'\n",
                                             "/opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb -c \"https://172.16.31.6\" -d ", { "Ref": "DomainName" }, " -e shipcloud", " -r ", { "Ref": "ChefClientRetries" }, " -o peasplitter -s ", { "Ref": "ShipName" }, " -l ", { "Ref": "SledName" }, " >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed chef client run on ", { "Ref": "SledName" }, "'\n", 
-                                            "cfn-signal -e 0 -r 'Chef Client configuration completed' '", { "Ref": "StackFinishedWaitHandleId" }, "'"
+                                            "cfn-signal -e 0 -r 'Chef Client configuration completed' '", { "Ref": "StackFinishedWaitHandleId" }, "'\n",
+                                            "# cleanup boostrap serf\n",
+                                            "sudo stop bootstrap_serf; sudo rm -rf /usr/bin/sib_bootstrap; sudo rm /etc/sib_bootstrap; sudo rm /etc/init/bootstrap_serf.conf; sudo initctl reload-configuration"
                                         ]
                                     ]
                                 },
@@ -303,11 +311,11 @@
                             } 
                         }, 
                         "sources": {
-                            "/usr/bin" : "https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip"
+                            "/usr/bin/sib_bootstrap" : "https://dl.bintray.com/mitchellh/serf/0.6.1_linux_amd64.zip"
                         },
                         "commands" : {
                             "1-start-serf" : {
-                                "command" : "sudo chmod a+x /usr/bin/serf; sudo initctl reload-configuration; sudo start serf",
+                                "command" : "sudo chmod a+x /usr/bin/sib_bootstrap/serf; sudo initctl reload-configuration; sudo start bootstrap_serf",
                                 "ignoreErrors" : "false"
                             },
                             "2-install-chef" : {

@@ -113,7 +113,7 @@ module Shipwright
             elastic_ip = aws.allocate_address("vpc")[:body]
             ap elastic_ip
 
-            puts "Adding #{elastic_ip["publicIp"]} IP address to CICD security group for HTTP, HTTPS and SSH"
+            puts "Adding #{elastic_ip["publicIp"]} IP address to CICD security group for HTTP, HTTPS, SSH and Serf"
             result = aws.authorize_security_group_ingress(
                 "cicd", 
                 {
@@ -140,13 +140,35 @@ module Shipwright
                     "ToPort" => "443",
                     "IpProtocol" => "tcp"
                 })
-            abort("ERROR: failed to allow HTTPS ingress for cicd") unless result[:body]["return"] == true
+            abort("ERROR: failed to allow Serf tcp ingress for cicd") unless result[:body]["return"] == true
+            
+            # load global clluster port from the databag
+            serf_info = JSON.parse( IO.read("/tmp/chef-repo/data_bags/serf/global_cluster.json") )
+            result = aws.authorize_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{elastic_ip["publicIp"]}/32",
+                    "FromPort" => serf_info["bind_port"],
+                    "ToPort" => serf_info["bind_port"],
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to allow Serf tcp ingress for cicd") unless result[:body]["return"] == true
+            result = aws.authorize_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{elastic_ip["publicIp"]}/32",
+                    "FromPort" => serf_info["bind_port"],
+                    "ToPort" => serf_info["bind_port"],
+                    "IpProtocol" => "udp"
+                })
+            abort("ERROR: failed to allow Serf udp ingress for cicd") unless result[:body]["return"] == true
 
             last_run_config = Hash.new
             last_run_config[:eip_alloc] = elastic_ip["allocationId"]
             last_run_config[:eip_address] = elastic_ip["publicIp"]
             last_run_config[:aws_key] = aws_info["aws_key"]
             last_run_config[:aws_secret] = aws_info["aws_secret"]
+            last_run_config[:serf_bind_port] = serf_info["bind_port"]
             File.open(File.join(Dir.home, ".shipwright", "lastrun.yml"), "w") do |file|
                 file.write last_run_config.to_yaml
             end
