@@ -216,6 +216,7 @@
                                         "role": "sled1"
                                     },
                                     "bind": "172.16.31.6:6946",
+                                    "rpc_addr": "127.0.0.1:6947",
                                     "profile": "wan",
                                     "encrypt_key": "eJcSFFUl4Hl4Y2ao1h7ByQ==",
                                     "node_name": {
@@ -371,7 +372,7 @@
                                 "done\n",
                                 "curl ${JSONURL} | grep \\\"result\\\":\\\"SUCCESS\\\" || error_exit 'Promote job failed.'\n",
                                 "# cleanup boostrap serf\n",
-                                "/usr/bin/sib_bootstrap/serf event chef_on_ship; sleep 3\n",
+                                "/usr/bin/sib_bootstrap/serf event -rpc-addr=127.0.0.1:6947 chef_on_ship; sleep 3\n",
                                 "sudo stop bootstrap_serf; sudo rm -rf /usr/bin/sib_bootstrap; sudo rm /etc/sib_bootstrap; sudo rm /etc/init/bootstrap_serf.conf; sudo initctl reload-configuration"
 
                             ]
