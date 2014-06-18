@@ -73,7 +73,7 @@ module Shipwright
 
             # cleanup security group ingresses
             result = aws.revoke_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{cleanup_config[:eip_address]}/32",
                     "FromPort" => "22",
@@ -82,7 +82,7 @@ module Shipwright
                 })
             abort("ERROR: failed to revoke SSH ingress for cicd") unless result[:body]["return"] == true
             result = aws.revoke_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{cleanup_config[:eip_address]}/32",
                     "FromPort" => "80",
@@ -91,7 +91,7 @@ module Shipwright
                 })
             abort("ERROR: failed to revoke HTTP ingress for cicd") unless result[:body]["return"] == true
             result = aws.revoke_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{cleanup_config[:eip_address]}/32",
                     "FromPort" => "443",
@@ -100,7 +100,7 @@ module Shipwright
                 })
             abort("ERROR: failed to revoke HTTP ingress for cicd") unless result[:body]["return"] == true
             result = aws.revoke_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{cleanup_config[:eip_address]}/32",
                     "FromPort" => cleanup_config[:serf_bind_port],
@@ -109,7 +109,7 @@ module Shipwright
                 })
             abort("ERROR: failed to revoke serf tcp ingress for cicd") unless result[:body]["return"] == true
             result = aws.revoke_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{cleanup_config[:eip_address]}/32",
                     "FromPort" => cleanup_config[:serf_bind_port],

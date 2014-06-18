@@ -115,7 +115,7 @@ module Shipwright
 
             puts "Adding #{elastic_ip["publicIp"]} IP address to CICD security group for HTTP, HTTPS, SSH and Serf"
             result = aws.authorize_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{elastic_ip["publicIp"]}/32",
                     "FromPort" => "22",
@@ -124,7 +124,7 @@ module Shipwright
                 })
             abort("ERROR: failed to allow SSH ingress for cicd") unless result[:body]["return"] == true
             result = aws.authorize_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{elastic_ip["publicIp"]}/32",
                     "FromPort" => "80",
@@ -133,7 +133,7 @@ module Shipwright
                 })
             abort("ERROR: failed to allow HTTP ingress for cicd") unless result[:body]["return"] == true
             result = aws.authorize_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{elastic_ip["publicIp"]}/32",
                     "FromPort" => "443",
@@ -145,7 +145,7 @@ module Shipwright
             # load global clluster port from the databag
             serf_info = JSON.parse( IO.read("/tmp/chef-repo/data_bags/serf/global_cluster.json") )
             result = aws.authorize_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{elastic_ip["publicIp"]}/32",
                     "FromPort" => serf_info["bind_port"],
@@ -154,7 +154,7 @@ module Shipwright
                 })
             abort("ERROR: failed to allow Serf tcp ingress for cicd") unless result[:body]["return"] == true
             result = aws.authorize_security_group_ingress(
-                "serf", 
+                "cicd", 
                 {
                     "CidrIp" => "#{elastic_ip["publicIp"]}/32",
                     "FromPort" => serf_info["bind_port"],
