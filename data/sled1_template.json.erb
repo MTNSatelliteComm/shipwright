@@ -159,7 +159,7 @@
                                 "content": {
                                     "Fn::Join": ["",
                                         [
-                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled1]\", \"recipe[mtn_roles::serf_ship_master]\" ] }"
+                                            "{ \"run_list\": [ \"recipe[chef_handler::rabbit]\", \"recipe[ship::", { "Ref": "ShipName" }, "]\", \"recipe[mtn_roles::sled1]\" ] }"
                                         ]
                                     ]
                                 },
