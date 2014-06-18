@@ -99,6 +99,24 @@ module Shipwright
                     "IpProtocol" => "tcp"
                 })
             abort("ERROR: failed to revoke HTTP ingress for cicd") unless result[:body]["return"] == true
+            result = aws.revoke_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{cleanup_config[:eip_address]}/32",
+                    "FromPort" => cleanup_config[:serf_bind_port],
+                    "ToPort" => cleanup_config[:serf_bind_port],
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to revoke serf tcp ingress for cicd") unless result[:body]["return"] == true
+            result = aws.revoke_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{cleanup_config[:eip_address]}/32",
+                    "FromPort" => cleanup_config[:serf_bind_port],
+                    "ToPort" => cleanup_config[:serf_bind_port],
+                    "IpProtocol" => "udp"
+                })
+            abort("ERROR: failed to revoke serf udp ingress ingress for cicd") unless result[:body]["return"] == true
 
             File.delete(File.join(Dir.home, ".shipwright", "lastrun.yml"))
             puts "SUCCESS!"

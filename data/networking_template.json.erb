@@ -110,7 +110,7 @@
         "Sled1SecurityGroup" : {
             "Type" : "AWS::EC2::SecurityGroup",
             "Properties" : {
-                "GroupDescription" : "Enable access to sled1, whcih acts as NAT for other sleds",
+                "GroupDescription" : "Enable access to sled1, which acts as NAT for other sleds",
                 "VpcId" : { "Ref" : "VPC" },
                 "SecurityGroupIngress" : [
                     { "IpProtocol" : "tcp",  "FromPort" : "80",  "ToPort" : "80",  "CidrIp" : "0.0.0.0/0"} ,
@@ -125,9 +125,11 @@
                     { "IpProtocol" : "tcp",  "FromPort" : "16672",  "ToPort" : "16672",  "CidrIp" : "0.0.0.0/0"} ,
                     { "IpProtocol" : "tcp",  "FromPort" : "3030",  "ToPort" : "3030",  "CidrIp" : "0.0.0.0/0"} ,
                     { "IpProtocol" : "tcp",  "FromPort" : "3030",  "ToPort" : "3030",  "CidrIp" : "0.0.0.0/0"} ,
-                    { "IpProtocol" : "udp",  "FromPort" : "7946",  "ToPort" : "7946",  "CidrIp" : "0.0.0.0/0"} ,
-                    { "IpProtocol" : "tcp",  "FromPort" : "7946",  "ToPort" : "7946",  "CidrIp" : "0.0.0.0/0"} ,
-                    { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "CidrIp" : "0.0.0.0/0"} 
+                    { "IpProtocol" : "udp",  "FromPort" : "7949",  "ToPort" : "7949",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "tcp",  "FromPort" : "7949",  "ToPort" : "7949",  "CidrIp" : "0.0.0.0/0"} ,
+                    { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "CidrIp" : "0.0.0.0/0"},
+                    { "IpProtocol" : "-1", "FromPort" : "-1",   "ToPort" : "-1",  "CidrIp" : "172.16.30.0/24" },
+                    { "IpProtocol" : "-1", "FromPort" : "-1",   "ToPort" : "-1",  "CidrIp" : "172.16.31.0/24" } 
                 ],
                 "Tags" : [
                     { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "Sled1SecurityGroup" ] ] } }
@@ -140,22 +142,8 @@
                 "GroupDescription" : "Allow access from sled1",
                 "VpcId" : { "Ref" : "VPC" },
                 "SecurityGroupIngress" : [
-                    { "IpProtocol" : "tcp",  "FromPort" : "80",  "ToPort" : "80",  "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } ,
-                    { "IpProtocol" : "tcp",  "FromPort" : "22",  "ToPort" : "22",  "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } ,
-                    { "IpProtocol" : "tcp",  "FromPort" : "443", "ToPort" : "443", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "tcp",  "FromPort" : "5672", "ToPort" : "5672", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "tcp",  "FromPort" : "5671", "ToPort" : "5671", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } ,
-                    { "IpProtocol" : "tcp",  "FromPort" : "2055", "ToPort" : "2055", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "tcp",  "FromPort" : "9418", "ToPort" : "9418", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "tcp",  "FromPort" : "15672", "ToPort" : "15672", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "tcp",  "FromPort" : "55672", "ToPort" : "55672", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "tcp",  "FromPort" : "16672", "ToPort" : "16672", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "tcp",  "FromPort" : "3030", "ToPort" : "3030", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "tcp",  "FromPort" : "3030", "ToPort" : "3030", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "udp",  "FromPort" : "7946", "ToPort" : "7946", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } ,
-                    { "IpProtocol" : "tcp",  "FromPort" : "7946", "ToPort" : "7946", "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } } , 
-                    { "IpProtocol" : "icmp", "FromPort" : "8",   "ToPort" : "-1",  "SourceSecurityGroupId" : { "Ref" : "Sled1SecurityGroup" } },
-                    { "IpProtocol" : "-1", "FromPort" : "-1",   "ToPort" : "-1",  "CidrIp" : "172.16.30.0/24" }
+                    { "IpProtocol" : "-1", "FromPort" : "-1",   "ToPort" : "-1",  "CidrIp" : "172.16.30.0/24" },
+                    { "IpProtocol" : "-1", "FromPort" : "-1",   "ToPort" : "-1",  "CidrIp" : "172.16.31.0/24" }
                 ],
                 "Tags" : [
                     { "Key" : "Name", "Value" :  { "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, "OtherSledSecurityGroup" ] ] } }

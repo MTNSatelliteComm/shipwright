@@ -167,7 +167,7 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/init/serf.conf": {
+                            "/etc/init/bootstrap_serf.conf": {
                                 "content": {
                                     "Fn::Join": ["",
                                         [
@@ -175,12 +175,12 @@
                                             "description \"Serf Agent\"\n",
                                             "start on (local-filesystems and net-device-up IFACE!=lo)\n",
                                             "stop on runlevel [06]\n\n",
-                                            "env SERF=/usr/bin/serf\n",
-                                            "env SERFCONFIG=/etc/serf\n\n",
+                                            "env SERF=/usr/bin/sib_bootstrap/serf\n",
+                                            "env SERFCONFIG=/etc/sib_bootstrap/serf\n\n",
                                             "setuid root\n",
                                             "setgid root\n\n",
                                             "# Serf emits log messages to stdout, and upstart will write that to\n",
-                                            "# /var/log/upstart/serf.log\n",
+                                            "# /var/log/upstart/bootstrap_serf.log\n",
                                             "exec $SERF agent -config-dir $SERFCONFIG\n\n",
                                             "respawn\n",
                                             "respawn limit 10 10\n",
@@ -210,20 +210,13 @@
                                 "owner": "root",
                                 "group": "root"
                             },
-                            "/etc/serf/serf.json": {
+                            "/etc/sib_bootstrap/serf/serf.json": {
                                 "content": {
                                     "tags": {
                                         "role": "sled1"
                                     },
-                                    "bind": "172.16.31.6:7946",
-                                    "advertise": {
-                                        "Fn::Join": ["",
-                                            [
-                                                { "Ref": "Sled1PublicIpAddr" },
-                                                ":7946"
-                                            ]
-                                        ]
-                                    },
+                                    "bind": "172.16.31.6:6946",
+                                    "rpc_addr": "127.0.0.1:6947",
                                     "profile": "wan",
                                     "encrypt_key": "eJcSFFUl4Hl4Y2ao1h7ByQ==",
                                     "node_name": {
@@ -259,6 +252,12 @@
                                 "owner": "root",
                                 "group": "root"
                             },
+                            "/usr/bin/sib_bootstrap/README": {
+                                "content": "bootstrap instance of serf.",
+                                "mode": "000644",
+                                "owner": "root",
+                                "group": "root"
+                            },
                             "/home/ubuntu/chef_11.10.4-1.ubuntu.12.04_amd64.deb" : {
                                 "source" : "https://opscode-omnibus-packages.s3.amazonaws.com/ubuntu/12.04/x86_64/chef_11.10.4-1.ubuntu.12.04_amd64.deb",
                                 "mode"   : "000664",
@@ -267,7 +266,7 @@
                             }
                         }, 
                         "sources": {
-                            "/usr/bin" : "https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip"
+                            "/usr/bin/sib_bootstrap" : "https://dl.bintray.com/mitchellh/serf/0.6.1_linux_amd64.zip"
                         },
                         "commands" : {
                             "1-setup-secondary-ip" : {
@@ -287,7 +286,7 @@
                                 "ignoreErrors" : "false"
                             },
                             "4-start-serf" : {
-                                "command" : "sudo chmod a+x /usr/bin/serf; sudo initctl reload-configuration; sudo start serf",
+                                "command" : "sudo chmod a+x /usr/bin/sib_bootstrap/serf; sudo initctl reload-configuration; sudo start bootstrap_serf",
                                 "ignoreErrors" : "false"
                             },
                             "5-signal-serf-installed" : {
@@ -372,7 +371,10 @@
                                 "    GREP_RETURN_CODE=$?\n",
                                 "done\n",
                                 "curl ${JSONURL} | grep \\\"result\\\":\\\"SUCCESS\\\" || error_exit 'Promote job failed.'\n",
-                                "serf event chef_on_ship"
+                                "# cleanup boostrap serf\n",
+                                "/usr/bin/sib_bootstrap/serf event -rpc-addr=127.0.0.1:6947 chef_on_ship; sleep 3\n",
+                                "sudo stop bootstrap_serf; sudo rm -rf /usr/bin/sib_bootstrap; sudo rm /etc/sib_bootstrap; sudo rm /etc/init/bootstrap_serf.conf; sudo initctl reload-configuration"
+
                             ]
                         ]
                     }
