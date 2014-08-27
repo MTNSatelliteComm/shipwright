@@ -402,6 +402,12 @@
                         "Value" : { 
                             "Fn::Join" : [ ":", [ { "Ref" : "AWS::StackName" }, { "Ref" : "SledName" } ] ] 
                         } 
+                    },
+                    { 
+                        "Key" : "SensuId", 
+                        "Value" : { 
+                            "Fn::Join" : [ "-", [ { "Ref": "ShipName" }, { "Ref" : "SledName" } ] ] 
+                        } 
                     } 
                 ]
             }
