@@ -113,7 +113,7 @@ module Shipwright
             elastic_ip = aws.allocate_address("vpc")[:body]
             ap elastic_ip
 
-            puts "Adding #{elastic_ip["publicIp"]} IP address to CICD security group for HTTP, HTTPS, SSH and Serf"
+            puts "Adding #{elastic_ip["publicIp"]} IP address to CICD security group for HTTP, HTTPS, SSH, Serf and Gerrit"
             result = aws.authorize_security_group_ingress(
                 "cicd", 
                 {
@@ -140,7 +140,17 @@ module Shipwright
                     "ToPort" => "443",
                     "IpProtocol" => "tcp"
                 })
-            abort("ERROR: failed to allow Serf tcp ingress for cicd") unless result[:body]["return"] == true
+            abort("ERROR: failed to allow HTTPS tcp ingress for cicd") unless result[:body]["return"] == true
+
+            result = aws.authorize_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{elastic_ip["publicIp"]}/32",
+                    "FromPort" => "29418",
+                    "ToPort" => "29418",
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to allow Gerrit tcp ingress for cicd") unless result[:body]["return"] == true
             
             # load global clluster port from the databag
             serf_info = JSON.parse( IO.read("/tmp/chef-repo/data_bags/serf/global_cluster.json") )

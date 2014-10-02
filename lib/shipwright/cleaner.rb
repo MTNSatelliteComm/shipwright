@@ -116,7 +116,17 @@ module Shipwright
                     "ToPort" => cleanup_config[:serf_bind_port],
                     "IpProtocol" => "udp"
                 })
-            abort("ERROR: failed to revoke serf udp ingress ingress for cicd") unless result[:body]["return"] == true
+            abort("ERROR: failed to revoke serf udp ingress for cicd") unless result[:body]["return"] == true
+
+            result = aws.revoke_security_group_ingress(
+                "cicd", 
+                {
+                    "CidrIp" => "#{cleanup_config[:eip_address]}/32",
+                    "FromPort" => "29418",
+                    "ToPort" => "29418",
+                    "IpProtocol" => "tcp"
+                })
+            abort("ERROR: failed to revoke Gerrit tcp ingress for cicd") unless result[:body]["return"] == true
 
             File.delete(File.join(Dir.home, ".shipwright", "lastrun.yml"))
             puts "SUCCESS!"
