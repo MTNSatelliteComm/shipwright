@@ -345,6 +345,7 @@
                                 "  exit 1\n", 
                                 "}\n", 
                                 "sudo apt-get update\n",
+                                "sudo apt-get -y --force-yes install zlib1g-dev\n",
                                 "sudo apt-get -y --force-yes remove apparmor libapparmor1\n",
                                 "sudo apt-get -y --force-yes install python-pip\n",
                                 "until sudo pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz --timeout=60; do\n",

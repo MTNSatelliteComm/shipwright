@@ -349,6 +349,7 @@
                                 "         --region     ", { "Ref": "AWS::Region" }, 
                                 " || error_exit 'Failed to run cfn-init'\n",
                                 "sudo apt-get update\n",
+                                "sudo apt-get -y --force-yes install zlib1g-dev\n",
                                 "sudo /opt/chef/embedded/bin/ruby /etc/chef/chef_init.rb", " -b ", { "Ref": "S3ChefBucket" }, " -c \"https://private-chef.mtnsatcloud.com\" -d ", { "Ref": "DomainName" }, " -e ", { "Ref": "ChefEnvironment" }, " -o ", { "Ref": "ChefOrganization" }, " -r ", { "Ref": "ChefClientRetries" }, " -s ", { "Ref": "ShipName" }, " -v ", { "Ref": "Validator" }, " -u -l sled1 >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to run chef_init script.'\n",
                                 "FILENAME=`sudo s3cmd ls s3://", { "Ref": "BackupBucket" }, "/backups/ -c /root/.s3cfg | tail -1 | awk '{print $4}'`\n", 
                                 "sudo s3cmd get ${FILENAME} /tmp/backup.tgz -c /root/.s3cfg --force >> /var/log/ship_in_a_bottle/chef_init.log 2>&1 || error_exit 'Failed to download latest chef-central backup'\n",
